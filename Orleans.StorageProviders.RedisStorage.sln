@@ -1,9 +1,17 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
+# Visual Studio 14
+VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.StorageProviders.RedisStorage", "RedisStorage\Orleans.StorageProviders.RedisStorage.csproj", "{C64DA14D-16F0-4DC9-B329-FD71F6F2C8CB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{AD3FE114-8745-460B-B200-7F0A3F3CA53F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.StorageProviders.RedisStorage.Tests", "Orleans.StorageProviders.RedisStorage.Tests\Orleans.StorageProviders.RedisStorage.Tests.csproj", "{5AFC795C-B5A2-472B-9396-11EE1F94EBBF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.StorageProviders.RedisStorage.GrainInterfaces", "Orleans.StorageProviders.RedisStorage.GrainInterfaces\Orleans.StorageProviders.RedisStorage.GrainInterfaces.csproj", "{9C13899A-EDEF-4D6A-A009-8D8DBDEC8609}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.StorageProviders.RedisStorage.GrainClasses", "Orleans.StorageProviders.RedisStorage.GrainClasses\Orleans.StorageProviders.RedisStorage.GrainClasses.csproj", "{1B075AC7-77CA-4D39-A7CC-13C328C40BCF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,8 +23,25 @@ Global
 		{C64DA14D-16F0-4DC9-B329-FD71F6F2C8CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C64DA14D-16F0-4DC9-B329-FD71F6F2C8CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C64DA14D-16F0-4DC9-B329-FD71F6F2C8CB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5AFC795C-B5A2-472B-9396-11EE1F94EBBF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5AFC795C-B5A2-472B-9396-11EE1F94EBBF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5AFC795C-B5A2-472B-9396-11EE1F94EBBF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5AFC795C-B5A2-472B-9396-11EE1F94EBBF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9C13899A-EDEF-4D6A-A009-8D8DBDEC8609}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9C13899A-EDEF-4D6A-A009-8D8DBDEC8609}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9C13899A-EDEF-4D6A-A009-8D8DBDEC8609}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9C13899A-EDEF-4D6A-A009-8D8DBDEC8609}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1B075AC7-77CA-4D39-A7CC-13C328C40BCF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1B075AC7-77CA-4D39-A7CC-13C328C40BCF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1B075AC7-77CA-4D39-A7CC-13C328C40BCF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1B075AC7-77CA-4D39-A7CC-13C328C40BCF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{5AFC795C-B5A2-472B-9396-11EE1F94EBBF} = {AD3FE114-8745-460B-B200-7F0A3F3CA53F}
+		{9C13899A-EDEF-4D6A-A009-8D8DBDEC8609} = {AD3FE114-8745-460B-B200-7F0A3F3CA53F}
+		{1B075AC7-77CA-4D39-A7CC-13C328C40BCF} = {AD3FE114-8745-460B-B200-7F0A3F3CA53F}
 	EndGlobalSection
 EndGlobal

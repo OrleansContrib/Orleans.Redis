@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using StackExchange.Redis;
 using Orleans.Runtime;
 using Orleans.Providers;
+using System.IO;
 using Newtonsoft.Json;
 
 namespace Orleans.StorageProviders
