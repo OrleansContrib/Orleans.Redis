@@ -1,17 +1,10 @@
 ﻿using Orleans.Storage;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using StackExchange.Redis;
 using Orleans.Runtime;
-using System.Threading;
 using Orleans.Providers;
-using Orleans;
-using Orleans.Serialization;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.IO;
 using Newtonsoft.Json;
 
 namespace Orleans.StorageProviders
@@ -82,7 +75,7 @@ namespace Orleans.StorageProviders
 
         /// <summary> Read state data function for this storage provider. </summary>
         /// <see cref="IStorageProvider#ReadStateAsync"/>
-        public async Task ReadStateAsync(string grainType, GrainReference grainReference, IGrainState grainState)
+        public async Task ReadStateAsync(string grainType, GrainReference grainReference, GrainState grainState)
         {
             var primaryKey = grainReference.ToKeyString();
 
@@ -105,7 +98,7 @@ namespace Orleans.StorageProviders
 
         /// <summary> Write state data function for this storage provider. </summary>
         /// <see cref="IStorageProvider#WriteStateAsync"/>
-        public async Task WriteStateAsync(string grainType, GrainReference grainReference, IGrainState grainState)
+        public async Task WriteStateAsync(string grainType, GrainReference grainReference, GrainState grainState)
         {
             var primaryKey = grainReference.ToKeyString();
             if (Log.IsVerbose3)
@@ -122,7 +115,7 @@ namespace Orleans.StorageProviders
         /// <remarks>
         /// </remarks>
         /// <see cref="IStorageProvider#ClearStateAsync"/>
-        public Task ClearStateAsync(string grainType, GrainReference grainReference, IGrainState grainState)
+        public Task ClearStateAsync(string grainType, GrainReference grainReference, GrainState grainState)
         {
             var primaryKey = grainReference.ToKeyString();
             if (Log.IsVerbose3)
@@ -133,5 +126,7 @@ namespace Orleans.StorageProviders
             redisDatabase.KeyDelete(primaryKey);
             return TaskDone.Done;
         }
+
+     
     }
 }
