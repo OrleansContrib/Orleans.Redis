@@ -6,10 +6,44 @@
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Runtime.Host;
     using GrainInterfaces;
+    using TestingHost;
+    using System.IO;
+
+
+    [DeploymentItem("DevTestServerConfiguration.xml")]
+    [DeploymentItem("DevTestClientConfiguration.xml")]
+    [DeploymentItem("OrleansProviders.dll")]
+    [DeploymentItem("Orleans.StorageProviders.RedisStorage.GrainClasses.dll")]
+    [DeploymentItem("RedisStorage.dll")]
 
     [TestClass]
-    public class UnitTest1
+    public class UnitTest1 : TestingSiloHost
     {
+        private readonly TimeSpan timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(10);
+
+        public UnitTest1()
+            : base(new TestingSiloOptions
+            {
+                StartFreshOrleans = true,
+                SiloConfigFile = new FileInfo("DevTestServerConfiguration.xml"),
+            },
+            new TestingClientOptions()
+            {
+                ClientConfigFile = new FileInfo("DevTestClientConfiguration.xml")
+            })
+        {
+        }
+
+        [ClassCleanup]
+        public static void ClassCleanup()
+        {
+            // Optional. 
+            // By default, the next test class which uses TestignSiloHost will
+            // cause a fresh Orleans silo environment to be created.
+            StopAllSilos();
+        }
+
+
         [TestMethod]
         public async Task TestGrains()
         {
@@ -29,48 +63,48 @@
 
         // code to initialize and clean up an Orleans Silo
 
-        private static SiloHost siloHost;
-        private static AppDomain hostDomain;
+        //private static SiloHost siloHost;
+        //private static AppDomain hostDomain;
 
-        private static void InitSilo(string[] args)
-        {
-            siloHost = new SiloHost("Primary");
-            siloHost.ConfigFileName = "DevTestServerConfiguration.xml";
-            siloHost.DeploymentId = "1";
-            siloHost.InitializeOrleansSilo();
-            var ok = siloHost.StartOrleansSilo();
-            if (!ok)
-                throw new SystemException(string.Format("Failed to start Orleans silo '{0}' as a {1} node.", siloHost.Name, siloHost.Type));
-        }
+        //private static void InitSilo(string[] args)
+        //{
+        //    siloHost = new SiloHost("Primary");
+        //    siloHost.ConfigFileName = "DevTestServerConfiguration.xml";
+        //    siloHost.DeploymentId = "1";
+        //    siloHost.InitializeOrleansSilo();
+        //    var ok = siloHost.StartOrleansSilo();
+        //    if (!ok)
+        //        throw new SystemException(string.Format("Failed to start Orleans silo '{0}' as a {1} node.", siloHost.Name, siloHost.Type));
+        //}
 
-        [ClassInitialize]
-        public static void GrainTestsClassInitialize(TestContext testContext)
-        {
-            hostDomain = AppDomain.CreateDomain("OrleansHost", null, new AppDomainSetup
-            {
-                AppDomainInitializer = InitSilo,
-                ApplicationBase = AppDomain.CurrentDomain.SetupInformation.ApplicationBase,
-            });
+        //[ClassInitialize]
+        //public static void GrainTestsClassInitialize(TestContext testContext)
+        //{
+        //    hostDomain = AppDomain.CreateDomain("OrleansHost", null, new AppDomainSetup
+        //    {
+        //        AppDomainInitializer = InitSilo,
+        //        ApplicationBase = AppDomain.CurrentDomain.SetupInformation.ApplicationBase,
+        //    });
 
-            GrainClient.Initialize("DevTestClientConfiguration.xml");
-        }
+        //    GrainClient.Initialize("DevTestClientConfiguration.xml");
+        //}
 
-        [ClassCleanup]
-        public static void GrainTestsClassCleanUp()
-        {
-            hostDomain.DoCallBack(() => {
-                siloHost.Dispose();
-                siloHost = null;
-                AppDomain.Unload(hostDomain);
-            });
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = "taskkill",
-                Arguments = "/F /IM vstest.executionengine.x86.exe",
-                UseShellExecute = false,
-                WindowStyle = ProcessWindowStyle.Hidden,
-            };
-            Process.Start(startInfo);
-        }
+        //[ClassCleanup]
+        //public static void GrainTestsClassCleanUp()
+        //{
+        //    hostDomain.DoCallBack(() => {
+        //        siloHost.Dispose();
+        //        siloHost = null;
+        //        AppDomain.Unload(hostDomain);
+        //    });
+        //    var startInfo = new ProcessStartInfo
+        //    {
+        //        FileName = "taskkill",
+        //        Arguments = "/F /IM vstest.executionengine.x86.exe",
+        //        UseShellExecute = false,
+        //        WindowStyle = ProcessWindowStyle.Hidden,
+        //    };
+        //    Process.Start(startInfo);
+        //}
     }
 }
