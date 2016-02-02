@@ -1,0 +1,17 @@
+﻿<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <version>$version$</version>
+    <authors>$author$</authors>
+    <owners />
+    <id>$id$</id>
+    <title>Orleans.StorageProviders.RedisStorage</title>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>$description$</description>
+    <copyright>MIT</copyright>
+    <summary>A Redis implementation of the Orleans Storage Provider model. Uses the Azure Redis Cache to persist grain states.</summary>
+    <projectUrl>https://github.com/OrleansContrib/Orleans.StorageProvider.Redis</projectUrl>
+    <tags>Orleans, redis, storageprovider</tags>
+  </metadata>
+  <files />
+</package>
