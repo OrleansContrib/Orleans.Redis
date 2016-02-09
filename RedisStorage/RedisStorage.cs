@@ -111,7 +111,7 @@ namespace Orleans.StorageProviders
             var data = new Dictionary<string, object>();
             if (value.HasValue)
             {
-                if (!useJsonFormat)
+                if (useJsonFormat)
                     data = JsonConvert.DeserializeObject<Dictionary<string, object>>(value, jsonSettings);
                 else
                     data = SerializationManager.DeserializeFromByteArray<Dictionary<string, object>>(value);
@@ -133,14 +133,14 @@ namespace Orleans.StorageProviders
             }
             var data = grainState.AsDictionary();
 
-            if (!useJsonFormat)
+            if (useJsonFormat)
             {
-                byte[] payload = SerializationManager.SerializeToByteArray(data);
+                var payload = JsonConvert.SerializeObject(data, jsonSettings);
                 await redisDatabase.StringSetAsync(primaryKey, payload);
             }
             else
             {
-                var payload = JsonConvert.SerializeObject(data, jsonSettings);
+                byte[] payload = SerializationManager.SerializeToByteArray(data);
                 await redisDatabase.StringSetAsync(primaryKey, payload);
             }
 
