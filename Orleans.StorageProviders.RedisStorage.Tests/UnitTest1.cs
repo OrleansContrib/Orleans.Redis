@@ -1,14 +1,15 @@
-﻿namespace Orleans.StorageProviders.RedisStorage.Tests
-{
-    using System;
-    using System.Diagnostics;
-    using System.Threading.Tasks;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Runtime.Host;
-    using GrainInterfaces;
-    using TestingHost;
-    using System.IO;
+﻿using System;
+using System.Diagnostics;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.IO;
+using Orleans.TestingHost;
+using Orleans.StorageProviders.RedisStorage.GrainInterfaces;
+using Orleans.Streams;
+using System.Linq;
 
+namespace Orleans.StorageProviders.RedisStorage.Tests
+{
 
     [DeploymentItem("DevTestServerConfiguration.xml")]
     [DeploymentItem("DevTestClientConfiguration.xml")]
@@ -45,7 +46,7 @@
 
 
         [TestMethod]
-        public async Task TestGrains()
+        public async Task TestStaticIdentifierGrains()
         {
             // insert your grain test code here
             var grain = GrainClient.GrainFactory.GetGrain<IGrain1>(1234);
@@ -58,6 +59,99 @@
             Assert.AreEqual(now, result.Item3);
             Assert.AreEqual(guid, result.Item4);
             Assert.AreEqual(2222, result.Item5.GetPrimaryKeyLong());
+        }
+
+
+        [TestMethod]
+        public async Task TestGrains()
+        {
+            var rnd = new Random();
+            var rndId1 = rnd.Next();
+            var rndId2 = rnd.Next();
+
+
+
+            // insert your grain test code here
+            var grain = GrainClient.GrainFactory.GetGrain<IGrain1>(rndId1);
+            var now = DateTime.UtcNow;
+            var guid = Guid.NewGuid();
+            await grain.Set("string value", 12345, now, guid, GrainClient.GrainFactory.GetGrain<IGrain1>(rndId2));
+            var result = await grain.Get();
+            Assert.AreEqual("string value", result.Item1);
+            Assert.AreEqual(12345, result.Item2);
+            Assert.AreEqual(now, result.Item3);
+            Assert.AreEqual(guid, result.Item4);
+            Assert.AreEqual(rndId2, result.Item5.GetPrimaryKeyLong());
+        }
+
+        [TestMethod]
+        public void JustSetValuesTest()
+        {
+            var rnd = new Random();
+            var rndId1 = rnd.Next();
+            var rndId2 = rnd.Next();
+
+            // insert your grain test code here
+            var grain = GrainClient.GrainFactory.GetGrain<IGrain1>(rndId1);
+            var now = DateTime.UtcNow;
+            var guid = Guid.NewGuid();
+            grain.Set("string value", 0, now, guid, GrainClient.GrainFactory.GetGrain<IGrain1>(rndId2)).Wait();
+        }
+
+        [TestMethod]
+        public void GetAndSetWithWaitTest()
+        {
+            var rnd = new Random();
+            var rndId1 = rnd.Next();
+            var rndId2 = rnd.Next();
+
+            // insert your grain test code here
+            var grain = GrainClient.GrainFactory.GetGrain<IGrain1>(rndId1);
+            var now = DateTime.UtcNow;
+            var guid = Guid.NewGuid();
+            grain.Set("string value", 0, now, guid, GrainClient.GrainFactory.GetGrain<IGrain1>(rndId2)).Wait();
+
+            var tGet = grain.Get();
+            tGet.Wait();
+            var result = tGet.Result;
+            Assert.AreEqual("string value", result.Item1);
+            Assert.AreEqual(0, result.Item2);
+            Assert.AreEqual(now, result.Item3);
+            Assert.AreEqual(guid, result.Item4);
+            Assert.AreEqual(rndId2, result.Item5.GetPrimaryKeyLong());
+        }
+
+
+
+        [TestMethod]
+        public async Task StreamingPubSubStoreTest()
+        {
+            var strmId = Guid.NewGuid();
+
+            var streamProv = GrainClient.GetStreamProvider("SMSProvider");
+            IAsyncStream<int> stream = streamProv.GetStream<int>(strmId, "test1");
+
+            StreamSubscriptionHandle<int> handle = await stream.SubscribeAsync(
+                (e, t) => { return TaskDone.Done; },
+                e => { return TaskDone.Done; });
+        }
+
+
+        [TestMethod]
+        public async Task PubSubStoreRetrievalTest()
+        {
+            var strmId = Guid.NewGuid();
+
+            var streamProv = GrainClient.GetStreamProvider("SMSProvider");
+            IAsyncStream<int> stream = streamProv.GetStream<int>(strmId, "test1");
+
+            StreamSubscriptionHandle<int> handle = await stream.SubscribeAsync(
+                (e, t) => { return TaskDone.Done; },
+                e => { return TaskDone.Done; });
+
+            var sh = await stream.GetAllSubscriptionHandles();
+
+            Assert.AreEqual<int>(1, sh.Count());
         }
 
 

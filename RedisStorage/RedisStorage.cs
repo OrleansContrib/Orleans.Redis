@@ -19,6 +19,7 @@ namespace Orleans.StorageProviders
         private const string REDIS_DATABASE_NUMBER = "DatabaseNumber";
 
         private string serviceId;
+        private Newtonsoft.Json.JsonSerializerSettings jsonSettings;
 
         /// <summary> Name of this storage provider instance. </summary>
         /// <see cref="IProvider#Name"/>
@@ -57,6 +58,22 @@ namespace Orleans.StorageProviders
                 redisDatabase = connectionMultiplexer.GetDatabase(databaseNumber);
             }
 
+
+
+            jsonSettings = new Newtonsoft.Json.JsonSerializerSettings()
+            {
+                TypeNameHandling = TypeNameHandling.All,
+                PreserveReferencesHandling = PreserveReferencesHandling.Objects,
+                DateFormatHandling = DateFormatHandling.IsoDateFormat,
+                DefaultValueHandling = DefaultValueHandling.Ignore,
+                MissingMemberHandling = MissingMemberHandling.Ignore,
+                NullValueHandling = NullValueHandling.Ignore,
+                ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor
+            };
+
+
+
+
             Log = providerRuntime.GetLogger("StorageProvider.RedisStorage." + serviceId);
         }
 
@@ -89,10 +106,20 @@ namespace Orleans.StorageProviders
             var data = new Dictionary<string, object>();
             if (value.HasValue)
             {
-                data = JsonConvert.DeserializeObject<Dictionary<string, object>>(value);
+                data = JsonConvert.DeserializeObject<Dictionary<string, object>>(value, jsonSettings);
             }
 
-            grainState.SetAll(data);
+            //var entity = new GrainStateEntity { PartitionKey = pk, RowKey = grainType };
+
+            try
+            {
+                grainState.SetAll(data);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(0, "setall failed", ex);
+                throw;
+            }
 
             grainState.Etag = Guid.NewGuid().ToString();
         }
@@ -108,7 +135,7 @@ namespace Orleans.StorageProviders
             }
             var data = grainState.AsDictionary();
 
-            var json = JsonConvert.SerializeObject(data);
+            var json = JsonConvert.SerializeObject(data, jsonSettings);
             await redisDatabase.StringSetAsync(primaryKey, json);
         }
 

@@ -3,7 +3,13 @@
   <Globals>
     <StorageProviders>
       <Provider Type="Orleans.StorageProviders.RedisStorage" Name="REDIS" RedisConnectionString="smellycat01.sbp-rbdev.net" />
+      <Provider Type="Orleans.StorageProviders.RedisStorage" Name="PubSubStore" RedisConnectionString="smellycat01.sbp-rbdev.net" />
     </StorageProviders>
+
+    <StreamProviders>
+      <Provider Type="Orleans.Providers.Streams.SimpleMessageStream.SimpleMessageStreamProvider" Name="SMSProvider" FireAndForgetDelivery="false"/>
+    </StreamProviders>
+
     <SeedNode Address="localhost" Port="22222"/>
     <Messaging ResponseTimeout="30s"/>
   </Globals>
