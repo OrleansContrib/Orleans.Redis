@@ -75,7 +75,9 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <Compile Include="UnitTest1.cs" />
+    <Compile Include="MyGrainTestsBinary.cs" />
+    <Compile Include="PubSubStoreTests.cs" />
+    <Compile Include="MyGrainTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -93,17 +95,14 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="ClientConfigurationForTesting.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
     <Content Include="DevTestClientConfiguration.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <SubType>Designer</SubType>
     </Content>
-    <Content Include="DevTestServerConfiguration.xml">
+    <Content Include="DevTestServerConfigurationBinaryFormat.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="OrleansConfigurationForTesting.xml">
+    <Content Include="DevTestServerConfiguration.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
