@@ -67,17 +67,18 @@ namespace Orleans.StorageProviders.RedisStorage.Tests
         [TestMethod]
         public async Task TestStaticIdentifierGrains()
         {
-            // insert your grain test code here
-            var grain = GrainClient.GrainFactory.GetGrain<IGrain1>(1234);
+            //note that we have two different test of the same grainType (one test for json, one test for binary)
+            //make sure that a different GrainId is used for each
+            var grain = GrainClient.GrainFactory.GetGrain<IGrain1>(1234000);
             var now = DateTime.UtcNow;
             var guid = Guid.NewGuid();
-            await grain.Set("string value", 12345, now, guid, GrainClient.GrainFactory.GetGrain<IGrain1>(2222));
+            await grain.Set("string value", 12345, now, guid, GrainClient.GrainFactory.GetGrain<IGrain1>(2222000));
             var result = await grain.Get();
             Assert.AreEqual("string value", result.Item1);
             Assert.AreEqual(12345, result.Item2);
             Assert.AreEqual(now, result.Item3);
             Assert.AreEqual(guid, result.Item4);
-            Assert.AreEqual(2222, result.Item5.GetPrimaryKeyLong());
+            Assert.AreEqual(2222000, result.Item5.GetPrimaryKeyLong());
         }
 
 

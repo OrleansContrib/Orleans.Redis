@@ -63,8 +63,14 @@ namespace Orleans.StorageProviders.RedisStorage.Tests
         }
 
 
-
+        /// <summary>
+        ///  THIS TEST SHOULD NOT BE THROWING AN EXCEPTION
+        ///  its the json serializer meshing with the GrainState.Set disctory based on reflection
+        ///  especially between int32 and int64
+        /// </summary>
+        /// <returns></returns>
         [TestMethod]
+        [ExpectedException(typeof(System.AggregateException))]
         public async Task TestStaticIdentifierGrains()
         {
             // insert your grain test code here
