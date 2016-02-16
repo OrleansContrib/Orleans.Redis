@@ -2,8 +2,8 @@
 <OrleansConfiguration xmlns="urn:orleans">
   <Globals>
     <StorageProviders>
-      <Provider Type="Orleans.StorageProviders.RedisStorage" Name="REDIS" RedisConnectionString="192.168.2.50" />
-      <Provider Type="Orleans.StorageProviders.RedisStorage" Name="PubSubStore" RedisConnectionString="192.168.2.50" />
+      <Provider Type="Orleans.StorageProviders.RedisStorage" Name="REDIS" RedisConnectionString="localhost" />
+      <Provider Type="Orleans.StorageProviders.RedisStorage" Name="PubSubStore" RedisConnectionString="localhost" />
     </StorageProviders>
 
     <StreamProviders>
