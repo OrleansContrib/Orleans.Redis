@@ -70,7 +70,7 @@ namespace Orleans.StorageProviders.RedisStorage.Tests
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        [ExpectedException(typeof(System.AggregateException))]
+        //[ExpectedException(typeof(System.AggregateException))]
         public async Task TestStaticIdentifierGrains()
         {
             // insert your grain test code here
