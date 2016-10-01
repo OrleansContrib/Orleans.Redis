@@ -99,7 +99,7 @@ namespace Orleans.StorageProviders
 
         /// <summary> Read state data function for this storage provider. </summary>
         /// <see cref="IStorageProvider#ReadStateAsync"/>
-        public async Task ReadStateAsync(string grainType, GrainReference grainReference, GrainState grainState)
+        public async Task ReadStateAsync(string grainType, GrainReference grainReference, IGrainState grainState)
         {
             var primaryKey = grainReference.ToKeyString();
 
@@ -110,31 +110,29 @@ namespace Orleans.StorageProviders
             }
 
             RedisValue value = await redisDatabase.StringGetAsync(primaryKey);
-            var data = new Dictionary<string, object>();
             if (value.HasValue)
             {
                 if (useJsonFormat)
-                    data = JsonConvert.DeserializeObject<Dictionary<string, object>>(value, jsonSettings);
+                    grainState.State = JsonConvert.DeserializeObject(value, grainState.State.GetType(), jsonSettings);
                 else
-                    data = SerializationManager.DeserializeFromByteArray<Dictionary<string, object>>(value);
+                    grainState.State = SerializationManager.DeserializeFromByteArray<object>(value);
             }
 
-            grainState.SetAll(data);
-
-            grainState.Etag = Guid.NewGuid().ToString();
+            // TODO : Fix this
+            grainState.ETag = Guid.NewGuid().ToString();
         }
 
         /// <summary> Write state data function for this storage provider. </summary>
         /// <see cref="IStorageProvider#WriteStateAsync"/>
-        public async Task WriteStateAsync(string grainType, GrainReference grainReference, GrainState grainState)
+        public async Task WriteStateAsync(string grainType, GrainReference grainReference, IGrainState grainState)
         {
             var primaryKey = grainReference.ToKeyString();
             if (Log.IsVerbose3)
             {
                 Log.Verbose3((int) ProviderErrorCode.RedisStorageProvider_WritingData, "Writing: GrainType={0} PrimaryKey={1} Grainid={2} ETag={3} to Database={4}", 
-                    grainType, primaryKey, grainReference, grainState.Etag, redisDatabase.Database);
+                    grainType, primaryKey, grainReference, grainState.ETag, redisDatabase.Database);
             }
-            var data = grainState.AsDictionary();
+            var data = grainState.State;
 
             if (useJsonFormat)
             {
@@ -153,13 +151,13 @@ namespace Orleans.StorageProviders
         /// <remarks>
         /// </remarks>
         /// <see cref="IStorageProvider#ClearStateAsync"/>
-        public Task ClearStateAsync(string grainType, GrainReference grainReference, GrainState grainState)
+        public Task ClearStateAsync(string grainType, GrainReference grainReference, IGrainState grainState)
         {
             var primaryKey = grainReference.ToKeyString();
             if (Log.IsVerbose3)
             {
                 Log.Verbose3((int) ProviderErrorCode.RedisStorageProvider_ClearingData, "Clearing: GrainType={0} Pk={1} Grainid={2} ETag={3} to Database={4}", 
-                    grainType, primaryKey, grainReference, grainState.Etag, redisDatabase.Database);
+                    grainType, primaryKey, grainReference, grainState.ETag, redisDatabase.Database);
             }
             //remove from cache
             return redisDatabase.KeyDeleteAsync(primaryKey);

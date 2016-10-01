@@ -35,6 +35,7 @@ namespace Orleans.StorageProviders.RedisStorage.Tests
         {
         }
 
+        /*
         [ClassCleanup]
         public static void ClassCleanup()
         {
@@ -43,6 +44,7 @@ namespace Orleans.StorageProviders.RedisStorage.Tests
             // cause a fresh Orleans silo environment to be created.
             StopAllSilos();
         }
+        */
 
         [TestMethod]
         public async Task StreamingPubSubStoreTest()

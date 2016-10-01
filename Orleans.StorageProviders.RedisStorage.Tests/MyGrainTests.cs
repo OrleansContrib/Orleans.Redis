@@ -35,6 +35,7 @@ namespace Orleans.StorageProviders.RedisStorage.Tests
         {
         }
 
+        /*
         [ClassCleanup]
         public static void ClassCleanup()
         {
@@ -43,6 +44,7 @@ namespace Orleans.StorageProviders.RedisStorage.Tests
             // cause a fresh Orleans silo environment to be created.
             StopAllSilos();
         }
+        */
 
         [TestMethod]
         public void InitializeWithNoStateTest()
@@ -74,7 +76,7 @@ namespace Orleans.StorageProviders.RedisStorage.Tests
         public async Task TestStaticIdentifierGrains()
         {
             // insert your grain test code here
-            var grain = GrainClient.GrainFactory.GetGrain<IGrain1>(1234);
+            var grain = GrainClient.GrainFactory.GetGrain<IGrain1>(12345);
             var now = DateTime.UtcNow;
             var guid = Guid.NewGuid();
             await grain.Set("string value", 12345, now, guid, GrainClient.GrainFactory.GetGrain<IGrain1>(2222));

@@ -34,7 +34,7 @@ namespace Orleans.StorageProviders.RedisStorage.Tests
             })
         {
         }
-
+/*
         [ClassCleanup]
         public static void ClassCleanup()
         {
@@ -43,6 +43,7 @@ namespace Orleans.StorageProviders.RedisStorage.Tests
             // cause a fresh Orleans silo environment to be created.
             StopAllSilos();
         }
+*/
 
         [TestMethod]
         public void InitializeWithNoStateTest()
@@ -69,7 +70,7 @@ namespace Orleans.StorageProviders.RedisStorage.Tests
         {
             //note that we have two different test of the same grainType (one test for json, one test for binary)
             //make sure that a different GrainId is used for each
-            var grain = GrainClient.GrainFactory.GetGrain<IGrain1>(1234000);
+            var grain = GrainClient.GrainFactory.GetGrain<IGrain1>(1234500);
             var now = DateTime.UtcNow;
             var guid = Guid.NewGuid();
             await grain.Set("string value", 12345, now, guid, GrainClient.GrainFactory.GetGrain<IGrain1>(2222000));
