@@ -6,14 +6,15 @@
 #pragma warning disable 693
 #pragma warning disable 1591
 #pragma warning disable 1998
-[assembly: global::System.CodeDom.Compiler.GeneratedCodeAttribute("Orleans-CodeGenerator", "1.2.3.0")]
+[assembly: global::System.CodeDom.Compiler.GeneratedCodeAttribute("Orleans-CodeGenerator", "1.3.1.0")]
 [assembly: global::Orleans.CodeGeneration.OrleansCodeGenerationTargetAttribute("Orleans.StorageProviders.RedisStorage.GrainInterfaces, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null")]
 namespace Orleans.StorageProviders.RedisStorage.GrainInterfaces
 {
     using global::Orleans.Async;
     using global::Orleans;
+    using global::System.Reflection;
 
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Orleans-CodeGenerator", "1.2.3.0"), global::System.SerializableAttribute, global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute, global::Orleans.CodeGeneration.GrainReferenceAttribute(typeof (global::Orleans.StorageProviders.RedisStorage.GrainInterfaces.IGrain1))]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Orleans-CodeGenerator", "1.3.1.0"), global::System.SerializableAttribute, global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute, global::Orleans.CodeGeneration.GrainReferenceAttribute(typeof (global::Orleans.StorageProviders.RedisStorage.GrainInterfaces.IGrain1))]
     internal class OrleansCodeGenGrain1Reference : global::Orleans.Runtime.GrainReference, global::Orleans.StorageProviders.RedisStorage.GrainInterfaces.IGrain1
     {
         protected @OrleansCodeGenGrain1Reference(global::Orleans.Runtime.GrainReference @other): base (@other)
@@ -76,7 +77,7 @@ namespace Orleans.StorageProviders.RedisStorage.GrainInterfaces
         }
     }
 
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Orleans-CodeGenerator", "1.2.3.0"), global::Orleans.CodeGeneration.MethodInvokerAttribute("global::Orleans.StorageProviders.RedisStorage.GrainInterfaces.IGrain1", 1743709865, typeof (global::Orleans.StorageProviders.RedisStorage.GrainInterfaces.IGrain1)), global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Orleans-CodeGenerator", "1.3.1.0"), global::Orleans.CodeGeneration.MethodInvokerAttribute("global::Orleans.StorageProviders.RedisStorage.GrainInterfaces.IGrain1", 1743709865, typeof (global::Orleans.StorageProviders.RedisStorage.GrainInterfaces.IGrain1)), global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute]
     internal class OrleansCodeGenGrain1MethodInvoker : global::Orleans.CodeGeneration.IGrainMethodInvoker
     {
         public global::System.Threading.Tasks.Task<global::System.Object> @Invoke(global::Orleans.Runtime.IAddressable @grain, global::Orleans.CodeGeneration.InvokeMethodRequest @request)
@@ -84,30 +85,23 @@ namespace Orleans.StorageProviders.RedisStorage.GrainInterfaces
             global::System.Int32 interfaceId = @request.@InterfaceId;
             global::System.Int32 methodId = @request.@MethodId;
             global::System.Object[] arguments = @request.@Arguments;
-            try
+            if (@grain == null)
+                throw new global::System.ArgumentNullException("grain");
+            switch (interfaceId)
             {
-                if (@grain == null)
-                    throw new global::System.ArgumentNullException("grain");
-                switch (interfaceId)
-                {
-                    case 1743709865:
-                        switch (methodId)
-                        {
-                            case -394250501:
-                                return ((global::Orleans.StorageProviders.RedisStorage.GrainInterfaces.IGrain1)@grain).@Set((global::System.String)arguments[0], (global::System.Int32)arguments[1], (global::System.DateTime)arguments[2], (global::System.Guid)arguments[3], (global::Orleans.StorageProviders.RedisStorage.GrainInterfaces.IGrain1)arguments[4]).@Box();
-                            case -940922787:
-                                return ((global::Orleans.StorageProviders.RedisStorage.GrainInterfaces.IGrain1)@grain).@Get().@Box();
-                            default:
-                                throw new global::System.NotImplementedException("interfaceId=" + 1743709865 + ",methodId=" + methodId);
-                        }
+                case 1743709865:
+                    switch (methodId)
+                    {
+                        case -394250501:
+                            return ((global::Orleans.StorageProviders.RedisStorage.GrainInterfaces.IGrain1)@grain).@Set((global::System.String)arguments[0], (global::System.Int32)arguments[1], (global::System.DateTime)arguments[2], (global::System.Guid)arguments[3], (global::Orleans.StorageProviders.RedisStorage.GrainInterfaces.IGrain1)arguments[4]).@Box();
+                        case -940922787:
+                            return ((global::Orleans.StorageProviders.RedisStorage.GrainInterfaces.IGrain1)@grain).@Get().@Box();
+                        default:
+                            throw new global::System.NotImplementedException("interfaceId=" + 1743709865 + ",methodId=" + methodId);
+                    }
 
-                    default:
-                        throw new global::System.NotImplementedException("interfaceId=" + interfaceId);
-                }
-            }
-            catch (global::System.Exception exception)
-            {
-                return global::Orleans.Async.TaskUtility.@Faulted(exception);
+                default:
+                    throw new global::System.NotImplementedException("interfaceId=" + interfaceId);
             }
         }
 

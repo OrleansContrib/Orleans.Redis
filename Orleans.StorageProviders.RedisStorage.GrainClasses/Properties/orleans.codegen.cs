@@ -6,14 +6,15 @@
 #pragma warning disable 693
 #pragma warning disable 1591
 #pragma warning disable 1998
-[assembly: global::System.CodeDom.Compiler.GeneratedCodeAttribute("Orleans-CodeGenerator", "1.2.3.0")]
+[assembly: global::System.CodeDom.Compiler.GeneratedCodeAttribute("Orleans-CodeGenerator", "1.3.1.0")]
 [assembly: global::Orleans.CodeGeneration.OrleansCodeGenerationTargetAttribute("Orleans.StorageProviders.RedisStorage.GrainClasses, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null")]
 namespace Orleans.StorageProviders.RedisStorage.GrainClasses
 {
     using global::Orleans.Async;
     using global::Orleans;
+    using global::System.Reflection;
 
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Orleans-CodeGenerator", "1.2.3.0"), global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute, global::Orleans.CodeGeneration.SerializerAttribute(typeof (global::Orleans.StorageProviders.RedisStorage.GrainClasses.MyState)), global::Orleans.CodeGeneration.RegisterSerializerAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Orleans-CodeGenerator", "1.3.1.0"), global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute, global::Orleans.CodeGeneration.SerializerAttribute(typeof (global::Orleans.StorageProviders.RedisStorage.GrainClasses.MyState)), global::Orleans.CodeGeneration.RegisterSerializerAttribute]
     internal class OrleansCodeGenOrleans_StorageProviders_RedisStorage_GrainClasses_MyStateSerializer
     {
         [global::Orleans.CodeGeneration.CopierMethodAttribute]
@@ -21,13 +22,13 @@ namespace Orleans.StorageProviders.RedisStorage.GrainClasses
         {
             global::Orleans.StorageProviders.RedisStorage.GrainClasses.MyState input = ((global::Orleans.StorageProviders.RedisStorage.GrainClasses.MyState)original);
             global::Orleans.StorageProviders.RedisStorage.GrainClasses.MyState result = new global::Orleans.StorageProviders.RedisStorage.GrainClasses.MyState();
+            global::Orleans.@Serialization.@SerializationContext.@Current.@RecordObject(original, result);
             result.@DateTimeValue = input.@DateTimeValue;
             result.@Etag = input.@Etag;
             result.@GrainValue = (global::Orleans.StorageProviders.RedisStorage.GrainInterfaces.IGrain1)global::Orleans.Serialization.SerializationManager.@DeepCopyInner(input.@GrainValue);
             result.@GuidValue = (global::System.Guid)global::Orleans.Serialization.SerializationManager.@DeepCopyInner(input.@GuidValue);
             result.@IntValue = input.@IntValue;
             result.@StringValue = input.@StringValue;
-            global::Orleans.@Serialization.@SerializationContext.@Current.@RecordObject(original, result);
             return result;
         }
 
