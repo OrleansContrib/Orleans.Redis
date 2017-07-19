@@ -1,13 +1,12 @@
-﻿using Orleans.Storage;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Threading.Tasks;
-using StackExchange.Redis;
-using Orleans.Runtime;
-using Orleans.Providers;
-using System.IO;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
+using Orleans.Providers;
+using Orleans.Runtime;
 using Orleans.Serialization;
+using Orleans.Storage;
+using StackExchange.Redis;
 
 namespace Orleans.StorageProviders
 {
@@ -24,6 +23,7 @@ namespace Orleans.StorageProviders
         private string serviceId;
         private bool useJsonFormat;
         private Newtonsoft.Json.JsonSerializerSettings jsonSettings;
+        private SerializationManager serializationManager;
 
         /// <summary> Name of this storage provider instance. </summary>
         /// <see cref="IProvider#Name"/>
@@ -40,6 +40,7 @@ namespace Orleans.StorageProviders
         {
             Name = name;
             serviceId = providerRuntime.ServiceId.ToString();
+            this.serializationManager = providerRuntime.ServiceProvider.GetRequiredService<SerializationManager>();
 
             if (!config.Properties.ContainsKey(REDIS_CONNECTION_STRING) ||
                 string.IsNullOrWhiteSpace(config.Properties[REDIS_CONNECTION_STRING]))
@@ -94,7 +95,7 @@ namespace Orleans.StorageProviders
         public Task Close()
         {
             connectionMultiplexer.Dispose();
-            return TaskDone.Done;
+            return Task.CompletedTask;
         }
 
         /// <summary> Read state data function for this storage provider. </summary>
@@ -115,7 +116,7 @@ namespace Orleans.StorageProviders
                 if (useJsonFormat)
                     grainState.State = JsonConvert.DeserializeObject(value, grainState.State.GetType(), jsonSettings);
                 else
-                    grainState.State = SerializationManager.DeserializeFromByteArray<object>(value);
+                    grainState.State = serializationManager.DeserializeFromByteArray<object>(value);
             }
 
             // TODO : Fix this
@@ -141,7 +142,7 @@ namespace Orleans.StorageProviders
             }
             else
             {
-                byte[] payload = SerializationManager.SerializeToByteArray(data);
+                byte[] payload = serializationManager.SerializeToByteArray(data);
                 await redisDatabase.StringSetAsync(primaryKey, payload);
             }
 

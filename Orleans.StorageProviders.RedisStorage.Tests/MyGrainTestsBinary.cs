@@ -5,8 +5,6 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.IO;
 using Orleans.TestingHost;
 using Orleans.StorageProviders.RedisStorage.GrainInterfaces;
-using Orleans.Streams;
-using System.Linq;
 
 namespace Orleans.StorageProviders.RedisStorage.Tests
 {
@@ -33,6 +31,7 @@ namespace Orleans.StorageProviders.RedisStorage.Tests
                 ClientConfigFile = new FileInfo("DevTestClientConfiguration.xml")
             })
         {
+            GrainClient.Initialize(ClientConfig);
         }
 /*
         [ClassCleanup]
