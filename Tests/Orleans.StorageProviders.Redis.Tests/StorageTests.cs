@@ -1,7 +1,12 @@
+using Newtonsoft.Json;
+using Orleans.Storage;
 using Orleans.StorageProviders.Redis.TestGrainInterfaces;
+using Orleans.StorageProviders.Redis.TestGrains;
 using Orleans.Streams;
 using Orleans.TestingHost;
 using System;
+using System.Globalization;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -116,6 +121,27 @@ namespace Orleans.StorageProviders.Redis.Tests
         }
 
         [Fact]
+        public async Task Json_BackwardsCompatible_ETag_Writes()
+        {
+            var testState = "{\"$id\":\"1\",\"$type\":\"Orleans.StorageProviders.Redis.TestGrains.JsonTestGrainState, Orleans.StorageProviders.Redis.TestGrains\",\"StringValue\":\"string value\",\"IntValue\":12345,\"DateTimeValue\":\"2018-03-13T14:44:51.8538156Z\",\"GuidValue\":\"98d37743-457f-4ebd-8904-1eb366c6a95a\",\"GrainValue\":{\"$id\":\"2\",\"$type\":\"Orleans.StorageProviders.Redis.TestGrainInterfaces.OrleansCodeGenJsonTestGrainReference, Orleans.StorageProviders.Redis.TestGrainInterfaces\",\"GrainId\":\"000000000000000000000000000008ae03ffffffda80f122\",\"GenericArguments\":\"\"}}";
+
+            var grain = _cluster.GrainFactory.GetGrain<IJsonTestGrain>(12345999);
+            var grainRef = await grain.GetReference();
+            var key = $"{grainRef.ToKeyString()}|json";
+            await _fixture.Database.StringSetAsync(key, testState);
+            
+            var guid = Guid.Parse("98d37743-457f-4ebd-8904-1eb366c6a95a");
+            var result = await grain.Get();
+            Assert.Equal("string value", result.Item1);
+            Assert.Equal(12345, result.Item2);
+            Assert.NotEqual(default(DateTime), result.Item3);
+            Assert.Equal(guid, result.Item4);
+            Assert.Equal(2222, result.Item5.GetPrimaryKeyLong());
+
+            await _fixture.Database.KeyDeleteAsync(key);
+        }
+
+        [Fact]
         public async Task StreamingPubSubStoreTest()
         {
             var strmId = Guid.NewGuid();
@@ -129,6 +155,50 @@ namespace Orleans.StorageProviders.Redis.Tests
         }
 
         [Fact]
+        public async Task PubSubTest()
+        {
+            var tcs = new TaskCompletionSource<int>();
+            var strmId = Guid.NewGuid();
+
+            var streamProv = _client.GetStreamProvider("SMSProvider");
+            var stream = streamProv.GetStream<int>(strmId, "test1");
+            
+            var handle = await stream.SubscribeAsync(
+                (i, t) => {
+                    if (i == 100)
+                    {
+                        Console.WriteLine($"PubSubTest: message number {i} - done!");
+                        tcs.TrySetResult(1);
+                    } else
+                    {
+                        Console.WriteLine($"PubSubTest: message number {i}");
+                    }
+                    return Task.CompletedTask;
+                },
+                e => { return Task.CompletedTask; }
+            );
+
+            var tasks = new Task[100];
+            for (int i = 1; i <= 100; i++)
+            {
+                tasks[i - 1] = stream.OnNextAsync(i);
+            }
+            await Task.WhenAll(tasks);
+
+            Task.Run(async () =>
+            {
+                await Task.Delay(5000);
+                tcs.SetException(new Exception("Timeout"));
+            }).Ignore();
+
+            var result = await tcs.Task;
+            Assert.Equal(1, result);
+
+            var handles = await stream.GetAllSubscriptionHandles();
+            Assert.Equal(1, handles.Count);
+        }
+
+        [Fact]
         public async Task PubSubStoreRetrievalTest()
         {
             //var strmId = Guid.NewGuid();
@@ -137,12 +207,12 @@ namespace Orleans.StorageProviders.Redis.Tests
             var streamProv = _client.GetStreamProvider("SMSProvider");
             IAsyncStream<int> stream = streamProv.GetStream<int>(strmId, "test1");
             //IAsyncStream<int> streamIn = streamProv.GetStream<int>(strmId, "test1");
-            
+
             for (int i = 0; i < 25; i++)
             {
                 await stream.OnNextAsync(i);
             }
-            
+
             StreamSubscriptionHandle<int> handle = await stream.SubscribeAsync(
                 (e, t) =>
                 {

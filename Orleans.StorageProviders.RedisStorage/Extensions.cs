@@ -10,7 +10,7 @@ namespace Orleans.StorageProviders
         public static ClusterConfiguration AddRedisStorageProvider(
             this ClusterConfiguration config, 
             string name, 
-            string hostPort = "localhost", 
+            string hostPort = "127.0.0.1:6379", 
             int dbNumber = 0, 
             bool useJson = false
         )

@@ -1,4 +1,5 @@
 ﻿using Orleans.Providers;
+using Orleans.Runtime;
 using Orleans.StorageProviders.Redis.TestGrainInterfaces;
 using System;
 using System.Threading.Tasks;
@@ -32,6 +33,11 @@ namespace Orleans.StorageProviders.Redis.TestGrains
         public Task Clear()
         {
             return ClearStateAsync();
+        }
+
+        public Task<GrainReference> GetReference()
+        {
+            return Task.FromResult(GrainReference);
         }
     }
 }

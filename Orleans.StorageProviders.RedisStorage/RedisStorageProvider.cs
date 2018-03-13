@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
@@ -19,10 +20,25 @@ namespace Orleans.StorageProviders
         internal const string REDIS_DATABASE_NUMBER = "DatabaseNumber";
         internal const string USE_JSON_FORMAT_PROPERTY = "UseJsonFormat";
 
+        private const string _writeScript = "local etag = redis.call('HGET', @key, 'etag')\nif etag == false or etag == @etag then return redis.call('HMSET', @key, 'etag', @newEtag, 'data', @data) else return false end";
+
         private string serviceId;
         private bool useJsonFormat;
-        private JsonSerializerSettings jsonSettings;
+
+        private JsonSerializerSettings jsonSettings { get; } = new JsonSerializerSettings()
+        {
+            TypeNameHandling = TypeNameHandling.All,
+            PreserveReferencesHandling = PreserveReferencesHandling.Objects,
+            DateFormatHandling = DateFormatHandling.IsoDateFormat,
+            DefaultValueHandling = DefaultValueHandling.Ignore,
+            MissingMemberHandling = MissingMemberHandling.Ignore,
+            NullValueHandling = NullValueHandling.Ignore,
+            ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
+        };
+
         private SerializationManager serializationManager;
+        private ConfigurationOptions _options;
+        private LuaScript _preparedWriteScript;
 
         /// <summary> Name of this storage provider instance. </summary>
         /// <see cref="IProvider#Name"/>
@@ -47,8 +63,9 @@ namespace Orleans.StorageProviders
                 throw new ArgumentException("RedisConnectionString is not set.");
             }
             var connectionString = config.Properties[REDIS_CONNECTION_STRING];
+            _options = ConfigurationOptions.Parse(connectionString);
 
-            connectionMultiplexer = await ConnectionMultiplexer.ConnectAsync(connectionString);
+            connectionMultiplexer = await ConnectionMultiplexer.ConnectAsync(_options);
 
             if (!config.Properties.ContainsKey(REDIS_DATABASE_NUMBER) ||
                 string.IsNullOrWhiteSpace(config.Properties[REDIS_DATABASE_NUMBER]))
@@ -61,25 +78,25 @@ namespace Orleans.StorageProviders
                 var databaseNumber = Convert.ToInt16(config.Properties[REDIS_DATABASE_NUMBER]);
                 redisDatabase = connectionMultiplexer.GetDatabase(databaseNumber);
             }
+            
+            _preparedWriteScript = LuaScript.Prepare(_writeScript);
+
+            var loadTasks = new Task[_options.EndPoints.Count];
+            for (int i = 0; i < _options.EndPoints.Count; i++)
+            {
+                var endpoint = _options.EndPoints.ElementAt(i);
+                var server = connectionMultiplexer.GetServer(endpoint);
+
+                loadTasks[i] = _preparedWriteScript.LoadAsync(server);
+            }
+            await Task.WhenAll(loadTasks);
 
             //initialize to use the default of JSON storage (this is to provide backwards compatiblity with previous version
             useJsonFormat = true;
 
             if (config.Properties.ContainsKey(USE_JSON_FORMAT_PROPERTY))
                 useJsonFormat = "true".Equals(config.Properties[USE_JSON_FORMAT_PROPERTY], StringComparison.OrdinalIgnoreCase);
-
-
-            jsonSettings = new Newtonsoft.Json.JsonSerializerSettings()
-            {
-                TypeNameHandling = TypeNameHandling.All,
-                PreserveReferencesHandling = PreserveReferencesHandling.Objects,
-                DateFormatHandling = DateFormatHandling.IsoDateFormat,
-                DefaultValueHandling = DefaultValueHandling.Ignore,
-                MissingMemberHandling = MissingMemberHandling.Ignore,
-                NullValueHandling = NullValueHandling.Ignore,
-                ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
-            };
-
+           
             Log = providerRuntime.GetLogger("StorageProvider.RedisStorage." + serviceId);
         }
 
@@ -96,7 +113,7 @@ namespace Orleans.StorageProviders
             connectionMultiplexer.Dispose();
             return Task.CompletedTask;
         }
-
+        
         /// <summary> Read state data function for this storage provider. </summary>
         /// <see cref="IStorageProvider#ReadStateAsync"/>
         public async Task ReadStateAsync(string grainType, GrainReference grainReference, IGrainState grainState)
@@ -108,44 +125,69 @@ namespace Orleans.StorageProviders
                 Log.Verbose3((int)ProviderErrorCode.RedisStorageProvider_ReadingData, "Reading: GrainType={0} Pk={1} Grainid={2} from Database={3}", 
                     grainType, primaryKey, grainReference, redisDatabase.Database);
             }
-
-            RedisValue value = await redisDatabase.StringGetAsync(primaryKey);
-            if (value.HasValue)
+            
+            try
             {
-                if (useJsonFormat)
-                    grainState.State = JsonConvert.DeserializeObject(value, grainState.State.GetType(), jsonSettings);
-                else
-                    grainState.State = serializationManager.DeserializeFromByteArray<object>(value);
+                var hashEntries = await redisDatabase.HashGetAllAsync(primaryKey);
+                if (hashEntries.Count() == 2)
+                {
+                    var etagEntry = hashEntries.Single(e => e.Name == "etag");
+                    var valueEntry = hashEntries.Single(e => e.Name == "data");
+                    if (useJsonFormat)
+                        grainState.State = JsonConvert.DeserializeObject(valueEntry.Value, grainState.State.GetType(), jsonSettings);
+                    else
+                        grainState.State = serializationManager.DeserializeFromByteArray<object>(valueEntry.Value);
+                    grainState.ETag = etagEntry.Value;
+                } else
+                {
+                    grainState.ETag = Guid.NewGuid().ToString();
+                }
             }
-
-            // TODO : Fix this
-            grainState.ETag = Guid.NewGuid().ToString();
+            catch (RedisServerException)
+            {
+                var stringValue = await redisDatabase.StringGetAsync(primaryKey);
+                if (stringValue.HasValue)
+                {
+                    if (useJsonFormat)
+                        grainState.State = JsonConvert.DeserializeObject(stringValue, grainState.State.GetType(), jsonSettings);
+                    else
+                        grainState.State = serializationManager.DeserializeFromByteArray<object>(stringValue);
+                }
+                grainState.ETag = Guid.NewGuid().ToString();
+            }
         }
 
         /// <summary> Write state data function for this storage provider. </summary>
         /// <see cref="IStorageProvider#WriteStateAsync"/>
         public async Task WriteStateAsync(string grainType, GrainReference grainReference, IGrainState grainState)
         {
-            var primaryKey = GetKey(grainReference);
+            var key = GetKey(grainReference);
 
             if (Log.IsVerbose3)
             {
                 Log.Verbose3((int) ProviderErrorCode.RedisStorageProvider_WritingData, "Writing: GrainType={0} PrimaryKey={1} Grainid={2} ETag={3} to Database={4}", 
-                    grainType, primaryKey, grainReference, grainState.ETag, redisDatabase.Database);
+                    grainType, key, grainReference, grainState.ETag, redisDatabase.Database);
             }
-            var data = grainState.State;
 
+            RedisResult response = null;
+            var newEtag = Guid.NewGuid().ToString();
             if (useJsonFormat)
             {
-                var payload = JsonConvert.SerializeObject(data, jsonSettings);
-                await redisDatabase.StringSetAsync(primaryKey, payload);
+                var payload = JsonConvert.SerializeObject(grainState.State, jsonSettings);
+                var args = new { key, etag = grainState.ETag ?? "null", newEtag, data = payload };
+                response = await redisDatabase.ScriptEvaluateAsync(_preparedWriteScript, args);
             }
             else
             {
-                byte[] payload = serializationManager.SerializeToByteArray(data);
-                await redisDatabase.StringSetAsync(primaryKey, payload);
+                var payload = serializationManager.SerializeToByteArray(grainState.State);
+                var args = new { key, etag = grainState.ETag ?? "null", newEtag, data = payload };
+                response = await redisDatabase.ScriptEvaluateAsync(_preparedWriteScript, args);
             }
 
+            if (response.IsNull)
+                throw new Exception("ETag mismatch");
+
+            grainState.ETag = newEtag;
         }
 
         /// <summary> Clear state data function for this storage provider. </summary>
