@@ -5,10 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Orleans.Core" Version="2.0.0-beta3" />
+    <PackageReference Include="Microsoft.Orleans.OrleansRuntime" Version="2.0.0-rc2" />
     <PackageReference Include="StackExchange.Redis" Version="1.2.6" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.0.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.1" />
   </ItemGroup>
 </Project>

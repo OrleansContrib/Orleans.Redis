@@ -1,22 +1,29 @@
 ﻿using Orleans.Providers;
 using Orleans.Runtime;
-using Orleans.StorageProviders.Redis.TestGrainInterfaces;
+using Orleans.Storage.Redis.TestGrainInterfaces;
 using System;
 using System.Threading.Tasks;
 
-namespace Orleans.StorageProviders.Redis.TestGrains
+namespace Orleans.Storage.Redis.TestGrains
 {
     [StorageProvider(ProviderName = "REDIS-JSON")]
     public class JsonTestGrain : Grain<JsonTestGrainState>, IJsonTestGrain
     {
-        public Task Set(string stringValue, int intValue, DateTime dateTimeValue, Guid guidValue, IJsonTestGrain grainValue)
+        public async Task<Exception> Set(string stringValue, int intValue, DateTime dateTimeValue, Guid guidValue, IJsonTestGrain grainValue)
         {
             State.StringValue = stringValue;
             State.IntValue = intValue;
             State.DateTimeValue = dateTimeValue;
             State.GuidValue = guidValue;
             State.GrainValue = grainValue;
-            return WriteStateAsync();
+            try
+            {
+                await WriteStateAsync();
+            } catch (Exception ex)
+            {
+                return ex;
+            }
+            return null;
         }
 
         public async Task<Tuple<string, int, DateTime, Guid, IJsonTestGrain>> Get()

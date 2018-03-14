@@ -1,16 +1,17 @@
 using Newtonsoft.Json;
 using Orleans.Storage;
-using Orleans.StorageProviders.Redis.TestGrainInterfaces;
-using Orleans.StorageProviders.Redis.TestGrains;
+using Orleans.Storage.Redis.TestGrainInterfaces;
+using Orleans.Storage.Redis.TestGrains;
 using Orleans.Streams;
 using Orleans.TestingHost;
+using StackExchange.Redis;
 using System;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Orleans.StorageProviders.Redis.Tests
+namespace Orleans.Storage.Redis.Tests
 {
     public class StorageTests : IClassFixture<ClusterFixture>
     {
@@ -68,8 +69,6 @@ namespace Orleans.StorageProviders.Redis.Tests
             Assert.Equal(now, result2.Item3);
             Assert.Equal(guid, result2.Item4);
             Assert.Equal(2222, result2.Item5.GetPrimaryKeyLong());
-
-            await Task.WhenAll(new[] { grain2.Clear(), grain.Clear() });
         }
 
         [Fact]
@@ -116,29 +115,62 @@ namespace Orleans.StorageProviders.Redis.Tests
             Assert.Equal(now, result2.Item3);
             Assert.Equal(guid, result2.Item4);
             Assert.Equal(2222, result2.Item5.GetPrimaryKeyLong());
-
-            await Task.WhenAll(new[] { grain2.Clear(), grain.Clear() });
         }
 
         [Fact]
         public async Task Json_BackwardsCompatible_ETag_Writes()
         {
-            var testState = "{\"$id\":\"1\",\"$type\":\"Orleans.StorageProviders.Redis.TestGrains.JsonTestGrainState, Orleans.StorageProviders.Redis.TestGrains\",\"StringValue\":\"string value\",\"IntValue\":12345,\"DateTimeValue\":\"2018-03-13T14:44:51.8538156Z\",\"GuidValue\":\"98d37743-457f-4ebd-8904-1eb366c6a95a\",\"GrainValue\":{\"$id\":\"2\",\"$type\":\"Orleans.StorageProviders.Redis.TestGrainInterfaces.OrleansCodeGenJsonTestGrainReference, Orleans.StorageProviders.Redis.TestGrainInterfaces\",\"GrainId\":\"000000000000000000000000000008ae03ffffffda80f122\",\"GenericArguments\":\"\"}}";
+            var jsonSettings = new JsonSerializerSettings()
+            {
+                TypeNameHandling = TypeNameHandling.All,
+                PreserveReferencesHandling = PreserveReferencesHandling.Objects,
+                DateFormatHandling = DateFormatHandling.IsoDateFormat,
+                DefaultValueHandling = DefaultValueHandling.Ignore,
+                MissingMemberHandling = MissingMemberHandling.Ignore,
+                NullValueHandling = NullValueHandling.Ignore,
+                ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
+            };
+            var now = DateTime.UtcNow;
+            var guid = Guid.NewGuid();
+            var state = new JsonTestGrainState
+            {
+                StringValue = "string value",
+                DateTimeValue = now,
+                GuidValue = guid,
+                IntValue = 12345,
+                GrainValue = _cluster.GrainFactory.GetGrain<IJsonTestGrain>(2222)
+            };
+            var testState = JsonConvert.SerializeObject(state, jsonSettings);
 
             var grain = _cluster.GrainFactory.GetGrain<IJsonTestGrain>(12345999);
             var grainRef = await grain.GetReference();
             var key = $"{grainRef.ToKeyString()}|json";
             await _fixture.Database.StringSetAsync(key, testState);
             
-            var guid = Guid.Parse("98d37743-457f-4ebd-8904-1eb366c6a95a");
             var result = await grain.Get();
-            Assert.Equal("string value", result.Item1);
-            Assert.Equal(12345, result.Item2);
-            Assert.NotEqual(default(DateTime), result.Item3);
-            Assert.Equal(guid, result.Item4);
-            Assert.Equal(2222, result.Item5.GetPrimaryKeyLong());
+            Assert.Equal(state.StringValue, result.Item1);
+            Assert.Equal(state.IntValue, result.Item2);
+            Assert.Equal(state.DateTimeValue, result.Item3);
+            Assert.Equal(state.GuidValue, result.Item4);
+            Assert.Equal(state.GrainValue.GetPrimaryKeyLong(), result.Item5.GetPrimaryKeyLong());
+        }
 
-            await _fixture.Database.KeyDeleteAsync(key);
+        [Fact]
+        public async Task Json_Double_Activation_ETag_Conflict_Simulation()
+        {
+            var now = DateTime.UtcNow;
+            var guid = Guid.NewGuid();
+            var grain = _cluster.GrainFactory.GetGrain<IJsonTestGrain>(54321);
+            var grainRef = await grain.GetReference();
+
+            var stuff = await grain.Get();
+            var scheduler = TaskScheduler.Current;
+
+            var key = $"{grainRef.ToKeyString()}|json";
+            await _fixture.Database.HashSetAsync(key, new[] { new HashEntry("etag", "derp") });
+            
+            var exception = await grain.Set("string value", 12345, now, guid, _cluster.GrainFactory.GetGrain<IJsonTestGrain>(2222));
+            Assert.IsType<ETagMismatchException>(exception);
         }
 
         [Fact]

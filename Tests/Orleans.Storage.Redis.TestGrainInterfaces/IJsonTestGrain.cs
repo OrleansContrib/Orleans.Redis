@@ -2,11 +2,11 @@
 using System;
 using System.Threading.Tasks;
 
-namespace Orleans.StorageProviders.Redis.TestGrainInterfaces
+namespace Orleans.Storage.Redis.TestGrainInterfaces
 {
     public interface IJsonTestGrain : IGrainWithIntegerKey
     {
-        Task Set(string stringValue, int intValue, DateTime dateTimeValue, Guid guidValue, IJsonTestGrain grainValue);
+        Task<Exception> Set(string stringValue, int intValue, DateTime dateTimeValue, Guid guidValue, IJsonTestGrain grainValue);
         Task<Tuple<string, int, DateTime, Guid, IJsonTestGrain>> Get();
         Task Clear();
         Task<GrainReference> GetReference();

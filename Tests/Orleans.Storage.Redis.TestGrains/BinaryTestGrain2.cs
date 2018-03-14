@@ -1,13 +1,15 @@
 ﻿using Orleans.Providers;
 using Orleans.Runtime;
-using Orleans.StorageProviders.Redis.TestGrainInterfaces;
+using Orleans.Storage.Redis.TestGrainInterfaces;
 using System;
+using System.Collections.Generic;
+using System.Text;
 using System.Threading.Tasks;
 
-namespace Orleans.StorageProviders.Redis.TestGrains
+namespace Orleans.Storage.Redis.TestGrains
 {
     [StorageProvider(ProviderName = "REDIS-BINARY")]
-    public class BinaryTestGrain : Grain<BinaryTestGrainState>, IBinaryTestGrain
+    public class BinaryTestGrain2 : Grain<BinaryTestGrainState2>, IBinaryTestGrain2
     {
         public Task Set(string stringValue, int intValue, DateTime dateTimeValue, Guid guidValue, IBinaryTestGrain grainValue)
         {

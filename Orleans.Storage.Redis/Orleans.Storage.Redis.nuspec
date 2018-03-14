@@ -5,7 +5,7 @@
     <authors>$author$</authors>
     <owners />
     <id>$id$</id>
-    <title>Orleans.StorageProviders.RedisStorage</title>
+    <title>Orleans.Storage.RedisStorage</title>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>A Redis implementation of the Orleans Storage Provider model</description>
     <copyright>MIT</copyright>

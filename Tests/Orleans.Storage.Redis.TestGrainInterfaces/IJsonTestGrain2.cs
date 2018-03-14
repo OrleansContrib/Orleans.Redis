@@ -2,7 +2,7 @@
 using System;
 using System.Threading.Tasks;
 
-namespace Orleans.StorageProviders.Redis.TestGrainInterfaces
+namespace Orleans.Storage.Redis.TestGrainInterfaces
 {
     public interface IJsonTestGrain2 : IGrainWithIntegerKey
     {
