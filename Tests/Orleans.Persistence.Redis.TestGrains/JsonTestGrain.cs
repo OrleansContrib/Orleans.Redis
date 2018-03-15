@@ -9,21 +9,14 @@ namespace Orleans.Persistence.Redis.TestGrains
     [StorageProvider(ProviderName = "REDIS-JSON")]
     public class JsonTestGrain : Grain<JsonTestGrainState>, IJsonTestGrain
     {
-        public async Task<Exception> Set(string stringValue, int intValue, DateTime dateTimeValue, Guid guidValue, IJsonTestGrain grainValue)
+        public Task Set(string stringValue, int intValue, DateTime dateTimeValue, Guid guidValue, IJsonTestGrain grainValue)
         {
             State.StringValue = stringValue;
             State.IntValue = intValue;
             State.DateTimeValue = dateTimeValue;
             State.GuidValue = guidValue;
             State.GrainValue = grainValue;
-            try
-            {
-                await WriteStateAsync();
-            } catch (Exception ex)
-            {
-                return ex;
-            }
-            return null;
+            return WriteStateAsync();
         }
 
         public async Task<Tuple<string, int, DateTime, Guid, IJsonTestGrain>> Get()

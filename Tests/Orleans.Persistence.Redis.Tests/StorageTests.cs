@@ -1,6 +1,7 @@
 using Newtonsoft.Json;
 using Orleans.Persistence.Redis.TestGrainInterfaces;
 using Orleans.Persistence.Redis.TestGrains;
+using Orleans.Storage;
 using Orleans.Streams;
 using Orleans.TestingHost;
 using StackExchange.Redis;
@@ -167,8 +168,7 @@ namespace Orleans.Persistence.Redis.Tests
             await _fixture.Database.HashSetAsync(key, new[] { new HashEntry("etag", "derp") });
 
             var otherGrain = _cluster.GrainFactory.GetGrain<IJsonTestGrain>(2222);
-            var exception = await grain.Set("string value", 12345, now, guid, otherGrain.AsReference<IJsonTestGrain>());
-            Assert.IsType<ETagMismatchException>(exception);
+            await Assert.ThrowsAsync<InconsistentStateException>(() => grain.Set("string value", 12345, now, guid, otherGrain));
         }
 
         [Fact]

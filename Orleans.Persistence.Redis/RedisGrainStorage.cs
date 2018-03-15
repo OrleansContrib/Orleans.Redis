@@ -184,7 +184,7 @@ namespace Orleans.Persistence
                 timer.Stop();
                 _logger.LogError("Writing: GrainType={0} PrimaryKey={1} Grainid={2} ETag={3} to Database={4}, finished in {5} ms - Error: ETag mismatch!",
                     grainType, key, grainReference, grainState.ETag, _db.Database, timer.Elapsed.TotalMilliseconds.ToString("0.00"));
-                throw new ETagMismatchException(grainState.ETag, $"ETag mismatch - tried with ETag: {grainState.ETag}");
+                throw new InconsistentStateException($"ETag mismatch - tried with ETag: {grainState.ETag}");
             }
 
             grainState.ETag = newEtag;
