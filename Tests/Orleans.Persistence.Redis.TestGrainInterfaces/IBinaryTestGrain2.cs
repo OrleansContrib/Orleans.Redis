@@ -1,10 +1,8 @@
 ﻿using Orleans.Runtime;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
-namespace Orleans.Storage.Redis.TestGrainInterfaces
+namespace Orleans.Persistence.Redis.TestGrainInterfaces
 {
     public interface IBinaryTestGrain2 : IGrainWithIntegerKey
     {

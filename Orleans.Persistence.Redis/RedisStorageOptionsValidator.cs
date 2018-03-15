@@ -1,6 +1,6 @@
 ﻿using Orleans.Runtime;
 
-namespace Orleans.Storage
+namespace Orleans.Persistence
 {
     internal class RedisStorageOptionsValidator : IConfigurationValidator
     {

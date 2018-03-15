@@ -10,7 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Orleans.Storage.Redis.TestGrainInterfaces\Orleans.Storage.Redis.TestGrainInterfaces.csproj" />
+    <ProjectReference Include="..\Orleans.Persistence.Redis.TestGrainInterfaces\Orleans.Persistence.Redis.TestGrainInterfaces.csproj" />
   </ItemGroup>
 
 </Project>

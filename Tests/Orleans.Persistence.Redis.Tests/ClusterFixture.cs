@@ -1,21 +1,11 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Orleans.Hosting;
-using Orleans.Providers;
-using Orleans.Providers.Streams.SimpleMessageStream;
-using Orleans.Runtime;
-using Orleans.Serialization;
-using Orleans.Storage;
 using Orleans.TestingHost;
 using StackExchange.Redis;
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Orleans.Storage.Redis.Tests
+namespace Orleans.Persistence.Redis.Tests
 {
     public class ClusterFixture : IDisposable
     {

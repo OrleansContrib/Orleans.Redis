@@ -5,12 +5,12 @@
     <authors>$author$</authors>
     <owners />
     <id>$id$</id>
-    <title>Orleans.Storage.RedisStorage</title>
+    <title>Orleans.Persistence.Redis</title>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>A Redis implementation of the Orleans Storage Provider model</description>
     <copyright>MIT</copyright>
     <summary>A Redis implementation of the Orleans Storage Provider model. Uses the Azure Redis Cache to persist grain states.</summary>
-    <projectUrl>https://github.com/OrleansContrib/Orleans.StorageProvider.Redis</projectUrl>
+    <projectUrl>https://github.com/OrleansContrib/Orleans.Redis</projectUrl>
     <tags>Orleans, redis, storageprovider</tags>
   </metadata>
   <files />

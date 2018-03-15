@@ -1,4 +1,4 @@
-﻿namespace Orleans.Storage
+﻿namespace Orleans.Persistence
 {
     public class RedisStorageOptions
     {

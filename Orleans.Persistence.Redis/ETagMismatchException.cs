@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace Orleans.Storage
+namespace Orleans.Persistence
 {
     public class ETagMismatchException : Exception
     {

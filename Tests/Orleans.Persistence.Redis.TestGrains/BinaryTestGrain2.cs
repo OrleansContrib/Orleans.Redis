@@ -1,35 +1,28 @@
 ﻿using Orleans.Providers;
 using Orleans.Runtime;
-using Orleans.Storage.Redis.TestGrainInterfaces;
+using Orleans.Persistence.Redis.TestGrainInterfaces;
 using System;
 using System.Threading.Tasks;
 
-namespace Orleans.Storage.Redis.TestGrains
+namespace Orleans.Persistence.Redis.TestGrains
 {
-    [StorageProvider(ProviderName = "REDIS-JSON")]
-    public class JsonTestGrain : Grain<JsonTestGrainState>, IJsonTestGrain
+    [StorageProvider(ProviderName = "REDIS-BINARY")]
+    public class BinaryTestGrain2 : Grain<BinaryTestGrainState2>, IBinaryTestGrain2
     {
-        public async Task<Exception> Set(string stringValue, int intValue, DateTime dateTimeValue, Guid guidValue, IJsonTestGrain grainValue)
+        public Task Set(string stringValue, int intValue, DateTime dateTimeValue, Guid guidValue, IBinaryTestGrain grainValue)
         {
             State.StringValue = stringValue;
             State.IntValue = intValue;
             State.DateTimeValue = dateTimeValue;
             State.GuidValue = guidValue;
             State.GrainValue = grainValue;
-            try
-            {
-                await WriteStateAsync();
-            } catch (Exception ex)
-            {
-                return ex;
-            }
-            return null;
+            return WriteStateAsync();
         }
 
-        public async Task<Tuple<string, int, DateTime, Guid, IJsonTestGrain>> Get()
+        public async Task<Tuple<string, int, DateTime, Guid, IBinaryTestGrain>> Get()
         {
             await ReadStateAsync();
-            return new Tuple<string, int, DateTime, Guid, IJsonTestGrain>(
+            return new Tuple<string, int, DateTime, Guid, IBinaryTestGrain>(
               State.StringValue,
               State.IntValue,
               State.DateTimeValue,

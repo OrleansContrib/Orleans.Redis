@@ -3,18 +3,16 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans.Configuration;
-using Orleans.Providers;
 using Orleans.Runtime;
 using Orleans.Serialization;
-using Orleans.Storage;
 using StackExchange.Redis;
+using Orleans.Storage;
 
-namespace Orleans.Storage
+namespace Orleans.Persistence
 {
     public class RedisGrainStorage : IGrainStorage, ILifecycleParticipant<ISiloLifecycle>
     {

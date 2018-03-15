@@ -1,18 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Net;
 using Xunit;
 using Orleans.Configuration;
 using Orleans.Hosting;
 using Orleans.Runtime;
-using Orleans.Runtime.Configuration;
-using Orleans.Storage.Redis.TestGrains;
-using Orleans.Storage.Redis.TestGrainInterfaces;
+using Orleans.Persistence.Redis.TestGrains;
+using Orleans.Persistence.Redis.TestGrainInterfaces;
 
-namespace Orleans.Storage.Redis.Tests
+namespace Orleans.Persistence.Redis.Tests
 {
     public class SetupTests
     {

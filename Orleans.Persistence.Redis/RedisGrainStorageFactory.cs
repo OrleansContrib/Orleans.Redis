@@ -2,10 +2,8 @@
 using Microsoft.Extensions.Options;
 using Orleans.Storage;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace Orleans.Storage
+namespace Orleans.Persistence
 {
     public static class RedisGrainStorageFactory
     {

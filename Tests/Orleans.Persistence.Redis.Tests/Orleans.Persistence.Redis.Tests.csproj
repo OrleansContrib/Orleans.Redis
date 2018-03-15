@@ -24,9 +24,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Orleans.Storage.Redis\Orleans.Storage.Redis.csproj" />
-    <ProjectReference Include="..\Orleans.Storage.Redis.TestGrainInterfaces\Orleans.Storage.Redis.TestGrainInterfaces.csproj" />
-    <ProjectReference Include="..\Orleans.Storage.Redis.TestGrains\Orleans.Storage.Redis.TestGrains.csproj" />
+    <ProjectReference Include="..\..\Orleans.Persistence.Redis\Orleans.Persistence.Redis.csproj" />
+    <ProjectReference Include="..\Orleans.Persistence.Redis.TestGrainInterfaces\Orleans.Persistence.Redis.TestGrainInterfaces.csproj" />
+    <ProjectReference Include="..\Orleans.Persistence.Redis.TestGrains\Orleans.Persistence.Redis.TestGrains.csproj" />
   </ItemGroup>
 
 </Project>

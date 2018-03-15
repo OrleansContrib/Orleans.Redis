@@ -1,17 +1,14 @@
 using Newtonsoft.Json;
-using Orleans.Storage;
-using Orleans.Storage.Redis.TestGrainInterfaces;
-using Orleans.Storage.Redis.TestGrains;
+using Orleans.Persistence.Redis.TestGrainInterfaces;
+using Orleans.Persistence.Redis.TestGrains;
 using Orleans.Streams;
 using Orleans.TestingHost;
 using StackExchange.Redis;
 using System;
-using System.Globalization;
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Orleans.Storage.Redis.Tests
+namespace Orleans.Persistence.Redis.Tests
 {
     public class StorageTests : IClassFixture<ClusterFixture>
     {
@@ -168,8 +165,9 @@ namespace Orleans.Storage.Redis.Tests
 
             var key = $"{grainRef.ToKeyString()}|json";
             await _fixture.Database.HashSetAsync(key, new[] { new HashEntry("etag", "derp") });
-            
-            var exception = await grain.Set("string value", 12345, now, guid, _cluster.GrainFactory.GetGrain<IJsonTestGrain>(2222));
+
+            var otherGrain = _cluster.GrainFactory.GetGrain<IJsonTestGrain>(2222);
+            var exception = await grain.Set("string value", 12345, now, guid, otherGrain.AsReference<IJsonTestGrain>());
             Assert.IsType<ETagMismatchException>(exception);
         }
 

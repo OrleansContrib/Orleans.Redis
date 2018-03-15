@@ -5,13 +5,10 @@ using Orleans.Configuration;
 using Orleans.Hosting;
 using Orleans.Providers;
 using Orleans.Runtime;
-using Orleans.Runtime.Configuration;
-using Orleans.Storage;
 using System;
-using System.Collections.Generic;
-using System.Text;
+using Orleans.Storage;
 
-namespace Orleans.Storage
+namespace Orleans.Persistence
 {
     public static class Extensions
     {
