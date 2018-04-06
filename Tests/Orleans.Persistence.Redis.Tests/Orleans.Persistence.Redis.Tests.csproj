@@ -8,15 +8,15 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.5.0" />
-    <PackageReference Include="Microsoft.Orleans.OrleansRuntime" Version="2.0.0-rc2" />
-    <PackageReference Include="Microsoft.Orleans.TestingHost" Version="2.0.0-rc2" />
+    <PackageReference Include="Microsoft.Orleans.OrleansRuntime" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Orleans.TestingHost" Version="2.0.0" />
     <PackageReference Include="redis-inside" Version="3.3.0" />
     <PackageReference Include="xunit" Version="2.3.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
-    <PackageReference Include="Microsoft.Orleans.Core" Version="2.0.0-rc2" />
-    <PackageReference Include="Microsoft.Orleans.Core.Legacy" Version="2.0.0-rc2" />
-    <PackageReference Include="Microsoft.Orleans.Runtime.Legacy" Version="2.0.0-rc2" />
-    <PackageReference Include="Microsoft.Orleans.Server" Version="2.0.0-rc2" />
+    <PackageReference Include="Microsoft.Orleans.Core" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Orleans.Core.Legacy" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Orleans.Runtime.Legacy" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Orleans.Server" Version="2.0.0" />
     <PackageReference Include="StackExchange.Redis" Version="1.2.6" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.0.0" />

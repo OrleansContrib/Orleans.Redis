@@ -24,7 +24,7 @@ namespace Orleans.Persistence.Redis.Tests
 
             Console.WriteLine("Initializing Orleans TestCluster");
             var builder = new TestClusterBuilder(1);
-            builder.Options.ServiceId = Guid.NewGuid();
+            builder.Options.ServiceId = "Service";
             builder.Options.ClusterId = "TestCluster";
             builder.AddSiloBuilderConfigurator<SiloConfigurator>();
             builder.AddClientBuilderConfigurator<ClientConfigurator>();

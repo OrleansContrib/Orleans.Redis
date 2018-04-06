@@ -21,7 +21,7 @@ namespace Orleans.Persistence
 
         private const string _writeScript = "local etag = redis.call('HGET', @key, 'etag')\nif etag == false or etag == @etag then return redis.call('HMSET', @key, 'etag', @newEtag, 'data', @data) else return false end";
 
-        private readonly Guid _serviceId;
+        private readonly string _serviceId;
         private readonly string _name;
         private readonly SerializationManager _serializationManager;
         private readonly ILoggerFactory _loggerFactory;
