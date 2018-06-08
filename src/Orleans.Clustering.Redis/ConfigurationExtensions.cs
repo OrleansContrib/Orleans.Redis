@@ -11,12 +11,13 @@ namespace Orleans.Clustering.Redis
 {
     public static class ConfigurationExtensions
     {
-        public static ISiloHostBuilder UseRedisMembership(this ISiloHostBuilder builder, Action<OptionsBuilder<RedisOptions>> configuration)
+        public static ISiloHostBuilder UseRedisMembership(this ISiloHostBuilder builder, Action<RedisOptions> configuration)
         {
             return builder.ConfigureServices(services =>
             {
-                configuration.Invoke(services.AddOptions<RedisOptions>());
-                services.AddRedis();
+                var options = new RedisOptions();
+                configuration?.Invoke(options);                
+                services.AddSingleton(options).AddRedis();
             });
         }
 
@@ -27,12 +28,13 @@ namespace Orleans.Clustering.Redis
                 .AddRedis());
         }
 
-        public static IClientBuilder UseRedisGatewayList(this IClientBuilder builder, Action<OptionsBuilder<RedisOptions>> configuration)
+        public static IClientBuilder UseRedisGatewayList(this IClientBuilder builder, Action<RedisOptions> configuration)
         {
             return builder.ConfigureServices(services =>
             {
-                configuration?.Invoke(services.AddOptions<RedisOptions>());
-                services.AddRedis()
+                var options = new RedisOptions();
+                configuration?.Invoke(options);                
+                services.AddSingleton(options).AddRedis()
                     .AddSingleton<IGatewayListProvider, RedisGatewayListProvider>();
             });
         }

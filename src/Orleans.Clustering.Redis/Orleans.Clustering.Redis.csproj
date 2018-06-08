@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+ <PropertyGroup>
+    <PackageId>Orleans.Clustering.Redis</PackageId>
+    <Title>Microsoft Orleans clustering provider that uses Redis</Title>
+    <Description>Microsoft Orleans clustering provider backed by Redis</Description>
+    <Authors>Arley Schrock</Authors>
+    <Product>Orleans Redis Clustering</Product>
+    <PackageLicenseUrl>https://github.com/dotnet/Orleans#license</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/arleyschrock/Orleans.Clustering.Redis</PackageProjectUrl>
+    <PackageIconUrl>https://raw.githubusercontent.com/dotnet/orleans/gh-pages/assets/logo_128.png</PackageIconUrl>
+    <PackageTags>Orleans Cloud-Computing Actor-Model Actors Distributed-Systems Redis C# .NET</PackageTags>
+    <PackageReleaseNotes></PackageReleaseNotes>
+    <RepositoryUrl>https://github.com/arleyschrock/Orleans.Clustering.Redis</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <IncludeSymbols>true</IncludeSymbols>
+    <IncludeSource>true</IncludeSource>
+    <VersionPrefix>1.0.01</VersionPrefix>
+  </PropertyGroup>
+
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="2.0.1" />
+    <PackageReference Include="Microsoft.Orleans.Core" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Orleans.OrleansRuntime" Version="2.0.0" />
+    <PackageReference Include="StackExchange.Redis" Version="1.2.6"/>
+  </ItemGroup>
+</Project>

@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.Clustering.Redis", "src\Orleans.Clustering.Redis.csproj", "{6A1DA8A5-5048-4883-B10B-9D3A048B0169}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.Clustering.Redis", "src\Orleans.Clustering.Redis\Orleans.Clustering.Redis.csproj", "{6A1DA8A5-5048-4883-B10B-9D3A048B0169}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
