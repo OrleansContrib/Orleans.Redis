@@ -7,7 +7,6 @@
             "label": "build",
             "command": "dotnet build",
             "type": "shell",
-            "group": "build",
             "presentation": {
                 "reveal": "silent"
             },
@@ -15,7 +14,35 @@
             "group":{
                 "kind": "build",
                 "isDefault": true
-            }}
+            }
+        },
+        {
+            "label": "build-nuget",
+            "command": "dotnet pack -c Release",
+            "type": "shell",
+            "presentation": {
+                "reveal": "silent"
+            },
+            "problemMatcher": "$msCompile",
+            "dependsOn":"build",
+            "group":{
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "publish-nuget",
+            "command": "nuget push -source nuget.org ${workspaceRoot}/src/Orleans.Clustering.Redis/bin/Release/Orleans.Clustering.Redis.1.0.2.nupkg",
+            "type": "shell",
+            "presentation": {
+                "reveal": "silent"
+            },
+            "problemMatcher": "$msCompile",
+            "dependsOn":"build-nuget",
+            "group":{
+                "kind": "build",
+                "isDefault": true
+            }
         }
     ]
 }

@@ -1,0 +1,29 @@
+﻿<Properties>
+  <MonoDevelop.Ide.Workbench ActiveDocument="src/Orleans.Clustering.Redis/RedisMembershipTable.cs">
+    <Files>
+      <File FileName="src/Orleans.Clustering.Redis/RedisGatewayListProvider.cs" Line="22" Column="29" />
+      <File FileName="src/Orleans.Clustering.Redis/RedisMembershipTable.cs" Line="41" Column="73" />
+      <File FileName="src/Orleans.Clustering.Redis/ConfigurationExtensions.cs" Line="84" Column="59" />
+    </Files>
+    <Pads>
+      <Pad Id="ProjectPad">
+        <State name="__root__">
+          <Node name="Orleans.Clustering.Redis" expanded="True">
+            <Node name="Orleans.Clustering.Redis" expanded="True">
+              <Node name="Dependencies" expanded="True">
+                <Node name="PackageDependencies" expanded="True" />
+              </Node>
+              <Node name="RedisMembershipTable.cs" selected="True" />
+            </Node>
+          </Node>
+        </State>
+      </Pad>
+    </Pads>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+  <MultiItemStartupConfigurations />
+</Properties>

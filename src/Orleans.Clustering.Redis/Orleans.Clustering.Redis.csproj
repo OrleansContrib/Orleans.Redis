@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
   </PropertyGroup>
 
  <PropertyGroup>
@@ -18,7 +18,7 @@
     <RepositoryType>git</RepositoryType>
     <IncludeSymbols>true</IncludeSymbols>
     <IncludeSource>true</IncludeSource>
-    <VersionPrefix>1.0.01</VersionPrefix>
+    <VersionPrefix>1.0.02</VersionPrefix>
   </PropertyGroup>
 
 
