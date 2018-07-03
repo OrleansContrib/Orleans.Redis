@@ -27,6 +27,6 @@
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="2.0.1" />
     <PackageReference Include="Microsoft.Orleans.Core" Version="2.0.0" />
     <PackageReference Include="Microsoft.Orleans.OrleansRuntime" Version="2.0.0" />
-    <PackageReference Include="StackExchange.Redis" Version="1.2.6"/>
+    <PackageReference Include="StackExchange.Redis" Version="1.2.6" />
   </ItemGroup>
 </Project>
