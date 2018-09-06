@@ -14,6 +14,7 @@ namespace Orleans.Clustering.Redis
             TableVersion = tableVersion;
             ResourceVersion = tableVersion.VersionEtag;
         }
+
         public VersionedEntry()
         {
 

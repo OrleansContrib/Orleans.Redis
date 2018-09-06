@@ -7,6 +7,8 @@ using Newtonsoft.Json;
 using System.Linq;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Runtime.CompilerServices;
+[assembly: InternalsVisibleTo("Orleans.Clustering.Redis.Test")]
 
 namespace Orleans.Clustering.Redis
 {
@@ -15,29 +17,32 @@ namespace Orleans.Clustering.Redis
         private readonly IDatabase _db;
         private readonly RedisOptions _redisOptions;
         private readonly ClusterOptions _clusterOptions;
-        private readonly ILogger<RedisMembershipTable> _logger;
+        public ILoggerFactory LoggerFactory { get; }
+        public ILogger Logger { get; }
 
-        public RedisMembershipTable(IConnectionMultiplexer multiplexer, IOptions<RedisOptions> redisOptions, IOptions<ClusterOptions> clusterOptions, ILogger<RedisMembershipTable> logger)
+        public RedisMembershipTable(IConnectionMultiplexer multiplexer, IOptions<RedisOptions> redisOptions, IOptions<ClusterOptions> clusterOptions, ILoggerFactory loggerFactory)
         {
             _redisOptions = redisOptions.Value;
             _db = multiplexer.GetDatabase(_redisOptions.Database);
             _clusterOptions = clusterOptions.Value;
-            _logger = logger;
-            _logger.LogInformation("In RedisMembershipTable constructor");
+            LoggerFactory = loggerFactory;
+            Logger = loggerFactory?.CreateLogger<RedisMembershipTable>();
+            Logger?.LogInformation("In RedisMembershipTable constructor");
         }
 
         public async Task DeleteMembershipTableEntries(string clusterId)
         {
-            _logger.Debug($"{nameof(DeleteMembershipTableEntries)}: {clusterId}");
-            await _db.KeyDeleteAsync(clusterId);
+            Logger?.Debug($"{nameof(DeleteMembershipTableEntries)}: {ClusterKey}");
+            await _db.KeyDeleteAsync(ClusterKey);
             await Task.CompletedTask;
         }
 
         public async Task InitializeMembershipTable(bool tryInitTableVersion)
         {
-            _logger.Debug($"{nameof(InitializeMembershipTable)}: {tryInitTableVersion}");
+            Logger?.Debug($"{nameof(InitializeMembershipTable)}: {tryInitTableVersion}");
             await Task.CompletedTask;
         }
+
         private string Serialize<T>(T value)
         {
             return JsonConvert.SerializeObject(value,
@@ -49,10 +54,16 @@ namespace Orleans.Clustering.Redis
             return JsonConvert.DeserializeObject<T>(json,
                 new IPEndPointJsonConverter(), new SiloAddressJsonConverter());
         }
+
         public async Task<bool> InsertRow(MembershipEntry entry, TableVersion tableVersion)
         {
-            _logger.Debug($"{nameof(InsertRow)}: {Serialize(entry)}, {Serialize(tableVersion)}");
-            return await _db.HashSetAsync(ClusterKey, entry.SiloAddress.ToString(), Serialize(new VersionedEntry(entry, tableVersion)));
+            Logger?.Debug($"{nameof(InsertRow)}: {Serialize(entry)}, {Serialize(tableVersion)}");
+
+            var currentTable = await ReadAll();
+            if (tableVersion.Version <= currentTable.Version.Version || currentTable.Contains(entry.SiloAddress))
+                return false;
+            var etag = $"{tableVersion.Version}";
+            return await _db.HashSetAsync(ClusterKey, entry.SiloAddress.ToString(), Serialize(new VersionedEntry(entry, tableVersion) { ResourceVersion = etag }));
         }
 
         private RedisKey ClusterKey => $"{_clusterOptions.ClusterId}:{_clusterOptions.ServiceId}";
@@ -60,13 +71,16 @@ namespace Orleans.Clustering.Redis
 
         public async Task<MembershipTableData> ReadAll()
         {
-            _logger.Debug(nameof(ReadAll));
+            Logger?.Debug(nameof(ReadAll));
             var data = _db.HashGetAll(ClusterKey).Select(x => Deserialize<VersionedEntry>(x.Value));
+
             if (!data.Any())
             {
-                return await Task.FromResult(new MembershipTableData(new TableVersion(1, "v1")));
+                return await Task.FromResult(new MembershipTableData(new TableVersion(0, "0")));
             }
-            var mtd = new MembershipTableData(data.Select(x => Tuple.Create(x.Entry, x.ResourceVersion)).ToList(), data.First().TableVersion);
+
+            var highestVersion = data.OrderByDescending(x => x.TableVersion.Version).First();
+            var mtd = new MembershipTableData(data.Select(x => Tuple.Create(x.Entry, x.ResourceVersion)).ToList(), new TableVersion(highestVersion.TableVersion.Version, highestVersion.ResourceVersion));
             mtd.SupressDuplicateDeads();
             foreach (var item in mtd.Members.ToArray())
             {
@@ -75,43 +89,47 @@ namespace Orleans.Clustering.Redis
                     _db.HashDelete(ClusterKey, item.Item1.SiloAddress.ToString());
                 }
             }
-            _logger.LogInformation(mtd.ToString());
+            Logger?.LogInformation(mtd.ToString());
             return await Task.FromResult(mtd);
         }
 
         public async Task<MembershipTableData> ReadRow(SiloAddress key)
         {
-            _logger.Debug($"{nameof(ReadRow)}: {key.ToString()}");
+            Logger?.Debug($"{nameof(ReadRow)}: {key.ToString()}");
             var val = await _db.HashGetAsync(ClusterKey, key.ToString());
             if (val.HasValue)
             {
                 var entry = Deserialize<VersionedEntry>(val);
-                return await Task.FromResult(new MembershipTableData(Tuple.Create(entry.Entry, entry.ResourceVersion), entry.TableVersion));
+                return await Task.FromResult(new MembershipTableData(Tuple.Create(entry.Entry, entry.ResourceVersion), new TableVersion(entry.TableVersion.Version, entry.ResourceVersion)));
             }
-            return await Task.FromResult(new MembershipTableData(new TableVersion(1, "etag1")));
+            return await Task.FromResult(new MembershipTableData(new TableVersion(0, "0")));
         }
 
         public async Task UpdateIAmAlive(MembershipEntry entry)
         {
-            _logger.Debug($"{nameof(UpdateIAmAlive)}: {Serialize(entry)}");
+            Logger?.Debug($"{nameof(UpdateIAmAlive)}: {Serialize(entry)}");
 
             if (_db.HashExists(ClusterKey, entry.SiloAddress.ToString()))
             {
                 var record = Deserialize<VersionedEntry>(await _db.HashGetAsync(ClusterKey, entry.SiloAddress.ToString()));
-                record.Entry.IAmAliveTime = DateTime.Now;
+                record.Entry.IAmAliveTime = DateTime.UtcNow;
                 await _db.HashSetAsync(ClusterKey, record.Entry.SiloAddress.ToString(), Serialize(record));
             }
             else
             {
-                await InsertRow(entry, new TableVersion(1, "v1"));
+                await InsertRow(entry, new TableVersion(0, "0"));
             }
         }
 
         public async Task<bool> UpdateRow(MembershipEntry entry, string etag, TableVersion tableVersion)
         {
-            _logger.Debug($"{nameof(UpdateRow)}");
+            Logger?.Debug($"{nameof(UpdateRow)}");
+            var currentTable = await ReadAll();
+            if (tableVersion.Version <= currentTable.Version.Version || currentTable.Version.VersionEtag != tableVersion.VersionEtag)
+                return false;
+
             await _db.HashSetAsync(ClusterKey, entry.SiloAddress.ToString(), Serialize(new VersionedEntry(entry, tableVersion) { ResourceVersion = etag }));
-            return await Task.FromResult(true);
+            return true;
         }
     }
 }

@@ -1,6 +1,7 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
  <PropertyGroup>
@@ -8,6 +9,7 @@
     <Title>Microsoft Orleans clustering provider that uses Redis</Title>
     <Description>Microsoft Orleans clustering provider backed by Redis</Description>
     <Authors>Arley Schrock</Authors>
+    <Authors>Ryan Galkowski</Authors>
     <Product>Orleans Redis Clustering</Product>
     <PackageLicenseUrl>https://github.com/dotnet/Orleans#license</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/arleyschrock/Orleans.Clustering.Redis</PackageProjectUrl>
@@ -18,8 +20,8 @@
     <RepositoryType>git</RepositoryType>
     <IncludeSymbols>true</IncludeSymbols>
     <IncludeSource>true</IncludeSource>
-    <Version>1.0.32</Version>
-    <PackageVersion>1.0.32</PackageVersion>
+    <Version>1.1.0</Version>
+    <PackageVersion>1.1.0</PackageVersion>
   </PropertyGroup>
 
 
