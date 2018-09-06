@@ -4,22 +4,24 @@ using Orleans.Runtime;
 using StackExchange.Redis;
 using Orleans.Configuration;
 using Newtonsoft.Json;
-using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Orleans.Clustering.Redis
 {
     internal class RedisMembershipTable : IMembershipTable
     {
         private readonly IDatabase _db;
-        private readonly ClusterOptions _config;
+        private readonly RedisOptions _redisOptions;
+        private readonly ClusterOptions _clusterOptions;
         private readonly ILogger<RedisMembershipTable> _logger;
 
-        public RedisMembershipTable(IDatabase db, ClusterOptions config, ILogger<RedisMembershipTable> logger)
+        public RedisMembershipTable(IConnectionMultiplexer multiplexer, IOptions<RedisOptions> redisOptions, IOptions<ClusterOptions> clusterOptions, ILogger<RedisMembershipTable> logger)
         {
-            _db = db;
-            _config = config;
+            _redisOptions = redisOptions.Value;
+            _db = multiplexer.GetDatabase(_redisOptions.Database);
+            _clusterOptions = clusterOptions.Value;
             _logger = logger;
             _logger.LogInformation("In RedisMembershipTable constructor");
         }
@@ -38,22 +40,22 @@ namespace Orleans.Clustering.Redis
         }
         private string Serialize<T>(T value)
         {
-			return JsonConvert.SerializeObject(value, 
-				new IPEndPointJsonConverter(), new SiloAddressJsonConverter());
+            return JsonConvert.SerializeObject(value,
+                new IPEndPointJsonConverter(), new SiloAddressJsonConverter());
         }
 
-		private T Deserialize<T>(string json)
-		{
-			return JsonConvert.DeserializeObject<T>(json, 
-				new IPEndPointJsonConverter(), new SiloAddressJsonConverter());
-		}
+        private T Deserialize<T>(string json)
+        {
+            return JsonConvert.DeserializeObject<T>(json,
+                new IPEndPointJsonConverter(), new SiloAddressJsonConverter());
+        }
         public async Task<bool> InsertRow(MembershipEntry entry, TableVersion tableVersion)
         {
             _logger.Debug($"{nameof(InsertRow)}: {Serialize(entry)}, {Serialize(tableVersion)}");
             return await _db.HashSetAsync(ClusterKey, entry.SiloAddress.ToString(), Serialize(new VersionedEntry(entry, tableVersion)));
         }
 
-        private RedisKey ClusterKey => $"{_config.ClusterId}:{_config.ServiceId}";
+        private RedisKey ClusterKey => $"{_clusterOptions.ClusterId}:{_clusterOptions.ServiceId}";
 
 
         public async Task<MembershipTableData> ReadAll()
@@ -86,7 +88,7 @@ namespace Orleans.Clustering.Redis
                 var entry = Deserialize<VersionedEntry>(val);
                 return await Task.FromResult(new MembershipTableData(Tuple.Create(entry.Entry, entry.ResourceVersion), entry.TableVersion));
             }
-            return await Task<MembershipTableData>.FromResult((MembershipTableData)new MembershipTableData(new TableVersion(1, "etag1")));
+            return await Task.FromResult(new MembershipTableData(new TableVersion(1, "etag1")));
         }
 
         public async Task UpdateIAmAlive(MembershipEntry entry)

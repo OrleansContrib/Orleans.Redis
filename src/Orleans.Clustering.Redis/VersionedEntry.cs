@@ -10,9 +10,9 @@ namespace Orleans.Clustering.Redis
 
         public VersionedEntry(MembershipEntry entry, TableVersion tableVersion)
         {
-            this.Entry = entry;
-            this.TableVersion = tableVersion;
-            this.ResourceVersion = tableVersion.VersionEtag;
+            Entry = entry;
+            TableVersion = tableVersion;
+            ResourceVersion = tableVersion.VersionEtag;
         }
         public VersionedEntry()
         {

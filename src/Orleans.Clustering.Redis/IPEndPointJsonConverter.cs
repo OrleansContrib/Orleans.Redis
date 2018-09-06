@@ -38,6 +38,7 @@ namespace Orleans.Clustering.Redis
             public IPEndPoint Endpoint { get; set; }
         }
     }
+
     public class IPEndPointJsonConverter : JsonConverter
     {
         public override bool CanConvert(Type objectType)
