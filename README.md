@@ -11,11 +11,11 @@ Orleans membership provider for Redis
 [StackExchange.Redis](https://stackexchange.github.io/StackExchange.Redis/) StackExchange.Redis is a high performance general purpose redis client for .NET languages (C# etc).
 
 **Orleans.Clustering.Redis** is a package that uses Redis as a backend for cluster membership, making it easy to run Orleans clusters dynamically.
-<!--
+
 # TL;DR
 
 If you want to quickly test it, clone this repo and go to the [Samples Directory](https://github.com/OrleansContrib/Orleans.Clustering.Redis/tree/master/samples) for instructions on how to run a sample cluster.
--->
+
 # Overview
 
 Redis is a straight key/value store. Membership data is stored into the key [clusterid.serviceid] as a hash.
