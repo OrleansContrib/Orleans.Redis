@@ -19,10 +19,10 @@ If you want to quickly test it, clone this repo and go to the [Samples Directory
 # Overview
 
 Redis is a straight key/value store. Membership data is stored into the key [clusterid.serviceid] as a hash.
-<!--
+
 # Installation
 
-Installation is performed via [NuGet](https://www.nuget.org/packages?q=Orleans.Clustering.Redis)
+Installation is performed via [NuGet](https://www.nuget.org/packages/Orleans.Clustering.Redis/)
 
 From Package Manager:
 
@@ -35,7 +35,7 @@ From Package Manager:
 # Configuration
 
 A functional Redis database is required for this provider to work.
--->
+
 ## Silo
 Tell Orleans runtime that we are going to use Redis as our Cluster Membership Provider:
 
