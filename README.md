@@ -4,6 +4,8 @@ Orleans plugins for Redis
 ## Orleans.Clustering.Redis
 Orleans membership provider for Redis
 
+[![Build Status](https://travis-ci.org/arleyschrock/Orleans.Clustering.Redis.svg?branch=master)](https://travis-ci.org/arleyschrock/Orleans.Clustering.Redis)
+
 [Orleans](https://github.com/dotnet/orleans) is a framework that provides a straight-forward approach to building distributed high-scale computing applications, without the need to learn and apply complex concurrency or other scaling patterns. 
 
 [Redis](https://redis.io/) is an open source (BSD licensed), in-memory data structure store, used as a database, cache and message broker.
