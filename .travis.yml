@@ -4,4 +4,4 @@ dotnet: 2.1.402
 script:
  - dotnet restore
  - dotnet pack 
- - find . -name '*.nupkg' | while read line; do dotnet nuget push $line -k $NUGET_API_KEY; done
+ - find . -name '*.nupkg' | while read line; do dotnet nuget push $line -s 'https://api.nuget.org/v3/index.json' -k $NUGET_API_KEY; done
