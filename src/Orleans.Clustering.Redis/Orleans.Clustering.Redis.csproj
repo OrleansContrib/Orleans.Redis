@@ -19,8 +19,8 @@
     <RepositoryType>git</RepositoryType>
     <IncludeSymbols>true</IncludeSymbols>
     <IncludeSource>true</IncludeSource>
-    <Version>1.1.1</Version>
-    <PackageVersion>1.1.1</PackageVersion>
+    <Version>1.1.2</Version>
+    <PackageVersion>1.1.2</PackageVersion>
   </PropertyGroup>
 
 
