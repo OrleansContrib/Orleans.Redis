@@ -34,7 +34,6 @@ namespace Orleans.Clustering.Redis
         {
             Logger?.Debug($"{nameof(DeleteMembershipTableEntries)}: {ClusterKey}");
             await _db.KeyDeleteAsync(ClusterKey);
-            await Task.CompletedTask;
         }
 
         public async Task InitializeMembershipTable(bool tryInitTableVersion)
@@ -66,7 +65,7 @@ namespace Orleans.Clustering.Redis
             return await _db.HashSetAsync(ClusterKey, entry.SiloAddress.ToString(), Serialize(new VersionedEntry(entry, tableVersion) { ResourceVersion = etag }));
         }
 
-        private RedisKey ClusterKey => $"{_clusterOptions.ClusterId}:{_clusterOptions.ServiceId}";
+        private RedisKey ClusterKey => $"{_clusterOptions.ClusterId}";
 
 
         public async Task<MembershipTableData> ReadAll()
@@ -86,7 +85,7 @@ namespace Orleans.Clustering.Redis
             {
                 if (item.Item1.Status == SiloStatus.Dead)
                 {
-                    _db.HashDelete(ClusterKey, item.Item1.SiloAddress.ToString());
+                    await _db.HashDeleteAsync(ClusterKey, item.Item1.SiloAddress.ToString());
                 }
             }
             Logger?.LogInformation(mtd.ToString());
@@ -125,7 +124,7 @@ namespace Orleans.Clustering.Redis
         {
             Logger?.Debug($"{nameof(UpdateRow)}");
             var currentTable = await ReadAll();
-            if (tableVersion.Version <= currentTable.Version.Version || currentTable.Version.VersionEtag != tableVersion.VersionEtag)
+            if (tableVersion.Version <= currentTable.Version.Version)// || currentTable.Version.VersionEtag != tableVersion.VersionEtag)
                 return false;
 
             await _db.HashSetAsync(ClusterKey, entry.SiloAddress.ToString(), Serialize(new VersionedEntry(entry, tableVersion) { ResourceVersion = etag }));

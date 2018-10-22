@@ -12,7 +12,7 @@ namespace Orleans.Clustering.Redis
     internal class RedisGatewayListProvider : IGatewayListProvider
     {
         public TimeSpan MaxStaleness => GatewayOptions.GatewayListRefreshPeriod;
-        public bool IsUpdatable => true;
+        public bool IsUpdatable => false;
         public GatewayOptions GatewayOptions { get; }
         public ILoggerFactory LoggerFactory { get; }
         public ILogger Logger { get; }
@@ -45,7 +45,7 @@ namespace Orleans.Clustering.Redis
         public async Task InitializeGatewayListProvider()
         {
             Logger?.Debug($"{nameof(InitializeGatewayListProvider)}");
-            await Task.FromResult(0);
+            await Task.CompletedTask;
         }
     }
 }
