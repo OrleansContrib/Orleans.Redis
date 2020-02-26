@@ -49,7 +49,7 @@ namespace RedisSiloHost
                     options.ServiceId = "testcluster";
                 })
                 .ConfigureEndpoints(new Random(1).Next(10001, 10100), new Random(1).Next(20001, 20100))
-                .UseRedisMembership(opt =>
+                .UseRedisClustering(opt =>
                 {
                     opt.ConnectionString = "localhost:6379";
                     opt.Database = 0;

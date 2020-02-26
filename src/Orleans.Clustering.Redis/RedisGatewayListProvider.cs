@@ -5,32 +5,32 @@ using Orleans.Messaging;
 using Orleans.Runtime;
 using Orleans.Configuration;
 using System.Linq;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Orleans.Clustering.Redis
 {
     internal class RedisGatewayListProvider : IGatewayListProvider
     {
-        public TimeSpan MaxStaleness => GatewayOptions.GatewayListRefreshPeriod;
-        public bool IsUpdatable => false;
-        public GatewayOptions GatewayOptions { get; }
-        public ILoggerFactory LoggerFactory { get; }
-        public ILogger Logger { get; }
+        private readonly RedisMembershipTable _table;
+        private readonly GatewayOptions _gatewayOptions;
 
-        private RedisMembershipTable _table;
-
-        public RedisGatewayListProvider(IMembershipTable table, GatewayOptions options, ILoggerFactory loggerFactory)
+        public RedisGatewayListProvider(RedisMembershipTable table, IOptions<GatewayOptions> options)
         {
-            GatewayOptions = options;
-            LoggerFactory = loggerFactory;
-            Logger = loggerFactory?.CreateLogger<RedisGatewayListProvider>();
-            Logger?.LogInformation("In RedisGatewayListProvider constructor");
-            _table = table as RedisMembershipTable;
+            _gatewayOptions = options.Value;
+            _table = table;
         }
+
+        public TimeSpan MaxStaleness => _gatewayOptions.GatewayListRefreshPeriod;
+
+        public bool IsUpdatable => true;
 
         public async Task<IList<Uri>> GetGateways()
         {
-            Logger?.Debug($"{nameof(GetGateways)}");
+            if (!_table.IsInitialized)
+            {
+                await _table.InitializeMembershipTable(true);
+            }
+
             var all = await _table.ReadAll();
             var result = all.Members
                .Where(x => x.Item1.Status == SiloStatus.Active && x.Item1.ProxyPort != 0)
@@ -39,13 +39,12 @@ namespace Orleans.Clustering.Redis
                     x.Item1.SiloAddress.Endpoint.Port = x.Item1.ProxyPort;
                     return x.Item1.SiloAddress.ToGatewayUri();
                 }).ToList();
-            return await Task.FromResult(result);
+            return result;
         }
 
         public async Task InitializeGatewayListProvider()
         {
-            Logger?.Debug($"{nameof(InitializeGatewayListProvider)}");
-            await Task.CompletedTask;
+            await _table.InitializeMembershipTable(true);
         }
     }
 }

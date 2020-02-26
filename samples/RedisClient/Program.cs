@@ -1,9 +1,9 @@
 ﻿using HelloWorld.Interfaces;
 using Microsoft.Extensions.Logging;
 using Orleans;
-using Orleans.Clustering.Redis;
 using Orleans.Configuration;
 using Orleans.Runtime;
+using Orleans.Hosting;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -54,7 +54,7 @@ namespace RedisClient
                             options.ClusterId = "testcluster";
                             options.ServiceId = "testcluster";
                         })
-                        .UseRedisMembership(opt =>
+                        .UseRedisClustering(opt =>
                         {
                             opt.ConnectionString = "localhost:6379";
                             opt.Database = 0;

@@ -28,12 +28,12 @@ public class RedisTests : MembershipTableTestsBase, IClassFixture<MultiplexerFix
 
     protected override IMembershipTable CreateMembershipTable(ILoggerFactory loggerFactory)
     {
-        return new RedisMembershipTable(multiplexerFixture.Multiplexer, Options.Create(multiplexerFixture.DatabaseOptions), Options.Create(new ClusterOptions { ClusterId = this.clusterId, ServiceId = this.serviceId }), loggerFactory);
+        return new RedisMembershipTable(Options.Create(multiplexerFixture.DatabaseOptions), Options.Create(new ClusterOptions { ClusterId = this.clusterId, ServiceId = this.serviceId }));
     }
 
     protected override IGatewayListProvider CreateGatewayListProvider(IMembershipTable membershipTable, ILoggerFactory logger)
     {
-        return new RedisGatewayListProvider(membershipTable, new GatewayOptions(), loggerFactory);
+        return new RedisGatewayListProvider((RedisMembershipTable)membershipTable, Options.Create(new GatewayOptions()));
     }
 
     protected override Task<string> GetConnectionString()

@@ -47,7 +47,7 @@ namespace RedisGatewayHost
                 })
                 .ConfigureEndpoints(new Random(1).Next(30001, 30100), new Random(1).Next(20001, 20100), listenOnAnyHostAddress: true)
                 .AddMemoryGrainStorageAsDefault()
-                .UseRedisMembership(opt =>
+                .UseRedisClustering(opt =>
                 {
                     opt.ConnectionString = "localhost:6379";
                     opt.Database = 0;

@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
@@ -25,9 +25,14 @@
 
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="2.1.1" />
-    <PackageReference Include="Microsoft.Orleans.Core" Version="2.0.3" />
-    <PackageReference Include="Microsoft.Orleans.OrleansRuntime" Version="2.0.4" />
-    <PackageReference Include="StackExchange.Redis" Version="2.0.495" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="3.1.2" />
+    <PackageReference Include="Microsoft.Orleans.Core" Version="3.1.0" />
+    <PackageReference Include="Microsoft.Orleans.OrleansRuntime" Version="3.1.0" />
+    <PackageReference Include="StackExchange.Redis" Version="2.0.601" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <PackageReference Update="Nerdbank.GitVersioning" Version="3.0.50" />
   </ItemGroup>
 </Project>
