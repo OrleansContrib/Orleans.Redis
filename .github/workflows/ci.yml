@@ -11,10 +11,10 @@ jobs:
     services:
       redis:
         image: redis
-        options: --entrypoint redis-server
         ports:
         - 6379:6379
         options: >-
+          --entrypoint redis-server
           --health-cmd "redis-cli ping"
           --health-interval 10s
           --health-timeout 5s
