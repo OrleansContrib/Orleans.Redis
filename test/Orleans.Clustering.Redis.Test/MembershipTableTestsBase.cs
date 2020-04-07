@@ -49,11 +49,12 @@ namespace Orleans.Clustering.Redis.Test
 
             this.clusterOptions = Options.Create(new ClusterOptions { ClusterId = this.clusterId, ServiceId = this.serviceId });
 
-            var adoVariant = GetAdoInvariant();
+            var redisHost = Environment.GetEnvironmentVariable("REDIS_HOST") ?? "localhost";
+            var redisPort = Environment.GetEnvironmentVariable("REDIS_PORT") ?? "6379";
 
             var options = new RedisOptions
             {
-                ConnectionString = "localhost:6379, allowAdmin=true",
+                ConnectionString = $"{redisHost}:{redisPort}, allowAdmin=true",
                 Database = 0
             };
             this.multiplexerFixture = multiplexerFixture;
