@@ -17,7 +17,7 @@ namespace Orleans.Clustering.Redis.Test
 
         public void Dispose()
         {
-            Multiplexer.Close();
+            Multiplexer?.Close();
         }
     }
 }

@@ -1,17 +1,17 @@
 name: CI
 
 on:
+  push:
   pull_request:
     branches:
       - master
 
 jobs:
-  test:
+  "test":
     runs-on: ubuntu-latest
     services:
       redis:
         image: redis
-        options: --entrypoint redis-server
         ports:
         - 6379:6379
         options: >-
@@ -27,7 +27,7 @@ jobs:
     - name: Build
       run: dotnet build --configuration Release
     - name: Test
-      run: dotnet test --configuration Release --no-build
+      run: dotnet test --configuration Release --no-build --framework netcoreapp3.1
       env:
-        REDIS_HOST: redis
+        REDIS_HOST: localhost
         REDIS_PORT: ${{ job.services.redis.ports[6379] }}
