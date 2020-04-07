@@ -2,7 +2,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Orleans.Hosting;
 using Orleans.TestingHost;
-using RedisInside;
 using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
@@ -20,9 +19,6 @@ namespace Orleans.Persistence.Redis.Tests
         public ClusterFixture()
         {
             _redis = new RedisInside.Redis();
-            Console.WriteLine(_redis.Endpoint.ToString());
-
-            Console.WriteLine("Initializing Orleans TestCluster");
             var builder = new TestClusterBuilder(1);
             builder.Options.ServiceId = "Service";
             builder.Options.ClusterId = "TestCluster";
@@ -47,12 +43,11 @@ namespace Orleans.Persistence.Redis.Tests
             var redisOptions = ConfigurationOptions.Parse(_redis.Endpoint.ToString());
             var connection = ConnectionMultiplexer.ConnectAsync(redisOptions).Result;
             Database = connection.GetDatabase();
-            Console.WriteLine("Initialized Orleans TestCluster");
         }
 
-        public class SiloConfigurator : ISiloBuilderConfigurator
+        public class SiloConfigurator : ISiloConfigurator
         {
-            public void Configure(ISiloHostBuilder builder)
+            public void Configure(ISiloBuilder builder)
             {
                 //get the redis connection string from the testcluster's config
                 var redisEP = builder.GetConfigurationValue(nameof(RedisInside.Redis));
