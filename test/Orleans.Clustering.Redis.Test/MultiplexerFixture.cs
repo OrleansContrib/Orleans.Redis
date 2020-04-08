@@ -12,7 +12,7 @@ namespace Orleans.Clustering.Redis.Test
         public void Initialize(RedisOptions options)
         {
             DatabaseOptions = options;
-            Multiplexer = ConnectionMultiplexer.Connect(DatabaseOptions.ConnectionString + ", allowAdmin=true");
+            Multiplexer = ConnectionMultiplexer.Connect(options.ConnectionString);
         }
 
         public void Dispose()

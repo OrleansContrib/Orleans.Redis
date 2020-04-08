@@ -54,10 +54,10 @@ namespace Orleans.Clustering.Redis
 
         public async Task<bool> InsertRow(MembershipEntry entry, TableVersion tableVersion)
         {
-            return await UpsertRowInternal(entry, tableVersion, updateTableVersion: true) == UpsertResult.Success;
+            return await UpsertRowInternal(entry, tableVersion, updateTableVersion: true, allowInsertOnly: true) == UpsertResult.Success;
         }
 
-        private async Task<UpsertResult> UpsertRowInternal(MembershipEntry entry, TableVersion tableVersion, bool updateTableVersion)
+        private async Task<UpsertResult> UpsertRowInternal(MembershipEntry entry, TableVersion tableVersion, bool updateTableVersion, bool allowInsertOnly)
         {
             var tx = _db.CreateTransaction();
             var rowKey = entry.SiloAddress.ToString();
@@ -72,13 +72,20 @@ namespace Orleans.Clustering.Redis
                 tx.HashSetAsync(_clusterKey, TableVersionKey, SerializeVersion(tableVersion)).Ignore();
             }
 
-            var condition = tx.AddCondition(Condition.HashEqual(_clusterKey, TableVersionKey, SerializeVersion(Predeccessor(tableVersion))));
+            var versionCondition = tx.AddCondition(Condition.HashEqual(_clusterKey, TableVersionKey, SerializeVersion(Predeccessor(tableVersion))));
+            ConditionResult insertCondition = null;
+            if (allowInsertOnly)
+            {
+                insertCondition = tx.AddCondition(Condition.HashNotExists(_clusterKey, rowKey));
+            }
+
             tx.HashSetAsync(_clusterKey, rowKey, Serialize(entry)).Ignore();
 
             var success = await tx.ExecuteAsync();
 
             if (success) return UpsertResult.Success;
-            if (!condition.WasSatisfied) return UpsertResult.Conflict;
+            if (!versionCondition.WasSatisfied) return UpsertResult.Conflict;
+            if (!insertCondition.WasSatisfied) return UpsertResult.Failure;
             return UpsertResult.Failure;
         }
 
@@ -145,7 +152,7 @@ namespace Orleans.Clustering.Redis
             // Update only the IAmAliveTime property.
             existingEntry.IAmAliveTime = entry.IAmAliveTime;
 
-            var result = await UpsertRowInternal(existingEntry, tableVersion, updateTableVersion: false);
+            var result = await UpsertRowInternal(existingEntry, tableVersion, updateTableVersion: false, allowInsertOnly: false);
             if (result == UpsertResult.Conflict)
             {
                 throw new RedisClusteringException($"Failed to update IAmAlive value for key {key} due to conflict");
@@ -158,7 +165,7 @@ namespace Orleans.Clustering.Redis
 
         public async Task<bool> UpdateRow(MembershipEntry entry, string etag, TableVersion tableVersion)
         {
-            return await UpsertRowInternal(entry, tableVersion, updateTableVersion: true) == UpsertResult.Success;
+            return await UpsertRowInternal(entry, tableVersion, updateTableVersion: true, allowInsertOnly: false) == UpsertResult.Success;
         }
 
         public async Task CleanupDefunctSiloEntries(DateTimeOffset beforeDate)
@@ -186,23 +193,16 @@ namespace Orleans.Clustering.Redis
             Conflict = 3,
         }
 
-        private static string SerializeVersion(TableVersion tableVersion) => $"{tableVersion.Version.ToString(CultureInfo.InvariantCulture)}_{tableVersion.VersionEtag}";
+        private static string SerializeVersion(TableVersion tableVersion) => tableVersion.Version.ToString(CultureInfo.InvariantCulture);
 
-        private static TableVersion DeserializeVersion(string etag)
+        private static TableVersion DeserializeVersion(string versionString)
         {
-            if (string.IsNullOrWhiteSpace(etag)) return DefaultTableVersion;
-
-            var segments = etag.Split(new[] { '_' }, 2);
-
-            if (segments.Length != 2) return DefaultTableVersion;
-
-            var version = int.Parse(segments[0]);
-            var tag = segments[1];
-
-            return new TableVersion(version, tag);
+            if (string.IsNullOrWhiteSpace(versionString)) return DefaultTableVersion;
+            var version = int.Parse(versionString);
+            return new TableVersion(version, versionString);
         }
 
-        private static TableVersion Predeccessor(TableVersion tableVersion) => new TableVersion(tableVersion.Version - 1, tableVersion.VersionEtag);
+        private static TableVersion Predeccessor(TableVersion tableVersion) => new TableVersion(tableVersion.Version - 1, (tableVersion.Version - 1).ToString(CultureInfo.InvariantCulture));
 
 
         private string Serialize(MembershipEntry value)
