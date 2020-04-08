@@ -14,11 +14,11 @@
     <PackageIcon>logo_128.png</PackageIcon>
     <PackageTags>Orleans Redis</PackageTags>
     <PackageReleaseNotes></PackageReleaseNotes>
-    <RepositoryUrl>https://github.com/OrleansContrib/Orleans.Redis</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <IncludeSource>true</IncludeSource>
-    <LangVersion>latest</LangVersion>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,9 +26,8 @@
   </ItemGroup>
   
   <PropertyGroup>
-    <Deterministic>true</Deterministic>
-    <DeterministicSourcePaths Condition="'$(ContinuousIntegrationBuild)' != 'true'">false</DeterministicSourcePaths>
     <Features>strict</Features>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <!-- All .NET Framework projects should link to the reference assemblies package so that .NET Targeting Packs are not needed -->
