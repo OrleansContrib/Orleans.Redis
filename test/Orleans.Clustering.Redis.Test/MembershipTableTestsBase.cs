@@ -52,7 +52,7 @@ namespace Orleans.Clustering.Redis.Test
             var redisHost = Environment.GetEnvironmentVariable("REDIS_HOST") ?? "localhost";
             var redisPort = Environment.GetEnvironmentVariable("REDIS_PORT") ?? "6379";
 
-            var options = new RedisOptions
+            var options = new RedisClusteringOptions
             {
                 ConnectionString = $"{redisHost}:{redisPort}, allowAdmin=true",
                 Database = 0

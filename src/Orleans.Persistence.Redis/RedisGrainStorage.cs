@@ -14,21 +14,18 @@ using Orleans.Storage;
 
 namespace Orleans.Persistence
 {
+    /// <summary>
+    /// Redis-based grain storage provider
+    /// </summary>
     public class RedisGrainStorage : IGrainStorage, ILifecycleParticipant<ISiloLifecycle>
     {
-        private ConnectionMultiplexer _connection;
-        private IDatabase _db;
-
         private const string _writeScript = "local etag = redis.call('HGET', @key, 'etag')\nif etag == false or etag == @etag then return redis.call('HMSET', @key, 'etag', @newEtag, 'data', @data) else return false end";
-
         private readonly string _serviceId;
         private readonly string _name;
         private readonly SerializationManager _serializationManager;
-        private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger _logger;
         private readonly RedisStorageOptions _options;
-
-        private JsonSerializerSettings _jsonSettings { get; } = new JsonSerializerSettings()
+        private readonly JsonSerializerSettings _jsonSettings = new JsonSerializerSettings()
         {
             TypeNameHandling = TypeNameHandling.All,
             PreserveReferencesHandling = PreserveReferencesHandling.Objects,
@@ -38,37 +35,36 @@ namespace Orleans.Persistence
             NullValueHandling = NullValueHandling.Ignore,
             ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
         };
-
+        private ConnectionMultiplexer _connection;
+        private IDatabase _db;
         private ConfigurationOptions _redisOptions;
         private LuaScript _preparedWriteScript;
 
+        /// <summary>
+        /// Creates a new instance of the <see cref="RedisGrainStorage"/> type.
+        /// </summary>
         public RedisGrainStorage(
             string name, 
             RedisStorageOptions options, 
             SerializationManager serializationManager,
             IOptions<ClusterOptions> clusterOptions, 
-            ILoggerFactory loggerFactory
-        )
+            ILoggerFactory loggerFactory)
         {
-            this._name = name;
-
-            this._loggerFactory = loggerFactory;
-            var loggerName = $"{typeof(RedisGrainStorage).FullName}.{name}";
-            this._logger = loggerFactory.CreateLogger(loggerName);
-
-            this._options = options;
-            this._serializationManager = serializationManager;
-            this._serviceId = clusterOptions.Value.ServiceId;
+            _name = name;
+            _logger = loggerFactory.CreateLogger($"{typeof(RedisGrainStorage).FullName}.{name}");
+            _options = options;
+            _serializationManager = serializationManager;
+            _serviceId = clusterOptions.Value.ServiceId;
         }
 
+        /// <inheritdoc />
         public void Participate(ISiloLifecycle lifecycle)
         {
             var name = OptionFormattingUtilities.Name<RedisGrainStorage>(_name);
             lifecycle.Subscribe(name, _options.InitStage, Init, Close);
         }
-        
-        /// <summary> Initialization function for this storage provider. </summary>
-        /// <see cref="IProvider#Init"/>
+
+        /// <inheritdoc />
         public async Task Init(CancellationToken cancellationToken)
         {
             var timer = Stopwatch.StartNew();
@@ -111,9 +107,8 @@ namespace Orleans.Persistence
                 throw ex;
             }
         }
-        
-        /// <summary> Read state data function for this storage provider. </summary>
-        /// <see cref="IStorageProvider#ReadStateAsync"/>
+
+        /// <inheritdoc />
         public async Task ReadStateAsync(string grainType, GrainReference grainReference, IGrainState grainState)
         {
             var timer = Stopwatch.StartNew();
@@ -157,8 +152,7 @@ namespace Orleans.Persistence
             }
         }
 
-        /// <summary> Write state data function for this storage provider. </summary>
-        /// <see cref="IStorageProvider#WriteStateAsync"/>
+        /// <inheritdoc />
         public async Task WriteStateAsync(string grainType, GrainReference grainReference, IGrainState grainState)
         {
             var timer = Stopwatch.StartNew();
@@ -194,10 +188,7 @@ namespace Orleans.Persistence
                 grainType, key, grainReference, grainState.ETag, _db.Database, timer.Elapsed.TotalMilliseconds.ToString("0.00"));
         }
 
-        /// <summary> Clear state data function for this storage provider. </summary>
-        /// <remarks>
-        /// </remarks>
-        /// <see cref="IStorageProvider#ClearStateAsync"/>
+        /// <inheritdoc />
         public async Task ClearStateAsync(string grainType, GrainReference grainReference, IGrainState grainState)
         {
             var timer = Stopwatch.StartNew();
@@ -216,10 +207,12 @@ namespace Orleans.Persistence
             return $"{grainReference.ToKeyString()}|{format}";
         }
 
-        public Task Close(CancellationToken cancellationToken)
+        private async Task Close(CancellationToken cancellationToken)
         {
+            if (_connection is null) return;
+
+            await _connection.CloseAsync();
             _connection.Dispose();
-            return Task.CompletedTask;
         }
     }
 }

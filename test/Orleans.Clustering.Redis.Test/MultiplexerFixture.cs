@@ -4,12 +4,12 @@ namespace Orleans.Clustering.Redis.Test
 {
     public class MultiplexerFixture : IDisposable
     {
-        public RedisOptions DatabaseOptions { get; private set; }
+        public RedisClusteringOptions DatabaseOptions { get; private set; }
         public IConnectionMultiplexer Multiplexer { get; private set; }
 
         public MultiplexerFixture() { }
 
-        public void Initialize(RedisOptions options)
+        public void Initialize(RedisClusteringOptions options)
         {
             DatabaseOptions = options;
             Multiplexer = ConnectionMultiplexer.Connect(options.ConnectionString);
