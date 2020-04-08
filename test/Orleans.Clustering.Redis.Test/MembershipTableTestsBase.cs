@@ -40,12 +40,12 @@ namespace Orleans.Clustering.Redis.Test
 
         protected MembershipTableTestsBase(ITestOutputHelper output, MultiplexerFixture multiplexerFixture, LoggerFilterOptions filters)
         {
-            logger = new XunitLogger<MembershipTableTestsBase>(output);
+            this.logger = new XunitLogger<MembershipTableTestsBase>(output);
             this.clusterId = "testC-" + Guid.NewGuid();
             this.serviceId = "testS-" + Guid.NewGuid();
 
-            this.logger?.Info("ClusterId={0}", this.clusterId);
-            this.logger?.Info("ServiceId={0}", this.serviceId);
+            this.logger.Info("ClusterId={0}", this.clusterId);
+            this.logger.Info("ServiceId={0}", this.serviceId);
 
             this.clusterOptions = Options.Create(new ClusterOptions { ClusterId = this.clusterId, ServiceId = this.serviceId });
 

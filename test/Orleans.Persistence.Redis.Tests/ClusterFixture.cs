@@ -10,27 +10,25 @@ namespace Orleans.Persistence.Redis.Tests
 {
     public class ClusterFixture : IDisposable
     {
-        public readonly TestCluster Cluster;
-        public readonly IClusterClient Client;
-        
-        public readonly IDatabase Database;
-        private readonly RedisInside.Redis _redis;
+        private readonly ConnectionMultiplexer _redis;
 
         public ClusterFixture()
         {
-            _redis = new RedisInside.Redis();
             var builder = new TestClusterBuilder(1);
             builder.Options.ServiceId = "Service";
             builder.Options.ClusterId = "TestCluster";
             builder.AddSiloBuilderConfigurator<SiloConfigurator>();
             builder.AddClientBuilderConfigurator<ClientConfigurator>();
 
-            //this is one of the only ways to be able to pass data (the redis connection string) to the silo(s) that TestCluster will startup
+            var redisHost = Environment.GetEnvironmentVariable("REDIS_HOST") ?? "localhost";
+            var redisPort = Environment.GetEnvironmentVariable("REDIS_PORT") ?? "6379";
+            var redisConnectionString = $"{redisHost}:{redisPort}, allowAdmin=true";
+
             builder.ConfigureHostConfiguration(config =>
             {
                 config.AddInMemoryCollection(new Dictionary<string, string>()
                 {
-                    { nameof(RedisInside.Redis), _redis.Endpoint.ToString() }
+                    { "RedisConnectionString", redisConnectionString }
                 });
             });
 
@@ -40,17 +38,21 @@ namespace Orleans.Persistence.Redis.Tests
             Cluster.InitializeClient();
             Client = Cluster.Client;
 
-            var redisOptions = ConfigurationOptions.Parse(_redis.Endpoint.ToString());
-            var connection = ConnectionMultiplexer.ConnectAsync(redisOptions).Result;
-            Database = connection.GetDatabase();
+            var redisOptions = ConfigurationOptions.Parse(redisConnectionString);
+            _redis = ConnectionMultiplexer.ConnectAsync(redisOptions).Result;
+            this.Database = _redis.GetDatabase();
         }
+
+        public TestCluster Cluster { get; }
+        public IClusterClient Client { get; }
+        public IDatabase Database { get; }
 
         public class SiloConfigurator : ISiloConfigurator
         {
             public void Configure(ISiloBuilder builder)
             {
                 //get the redis connection string from the testcluster's config
-                var redisEP = builder.GetConfigurationValue(nameof(RedisInside.Redis));
+                var redisEP = builder.GetConfigurationValue("RedisConnectionString");
 
                 builder.AddMemoryGrainStorageAsDefault();
                 builder.AddRedisGrainStorage("REDIS-JSON", optionsBuilder => optionsBuilder.Configure(options =>
@@ -87,7 +89,6 @@ namespace Orleans.Persistence.Redis.Tests
             Database.ExecuteAsync("FLUSHALL").Wait();
             Client.Dispose();
             Cluster.StopAllSilos();
-
             _redis?.Dispose();
         }
     }
