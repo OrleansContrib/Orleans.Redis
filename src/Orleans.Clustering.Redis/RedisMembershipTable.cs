@@ -17,14 +17,14 @@ namespace Orleans.Clustering.Redis
     {
         private const string TableVersionKey = "Version";
         private static readonly TableVersion DefaultTableVersion = new TableVersion(0, "0");
-        private readonly RedisOptions _redisOptions;
+        private readonly RedisClusteringOptions _redisOptions;
         private readonly ClusterOptions _clusterOptions;
         private readonly JsonSerializerSettings _jsonSerializerSettings;
         private readonly RedisKey _clusterKey;
         private IConnectionMultiplexer _muxer;
         private IDatabase _db;
 
-        public RedisMembershipTable(IOptions<RedisOptions> redisOptions, IOptions<ClusterOptions> clusterOptions)
+        public RedisMembershipTable(IOptions<RedisClusteringOptions> redisOptions, IOptions<ClusterOptions> clusterOptions)
         {
             _redisOptions = redisOptions.Value;
             _clusterOptions = clusterOptions.Value;

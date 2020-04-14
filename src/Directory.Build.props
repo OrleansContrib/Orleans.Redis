@@ -7,11 +7,14 @@
   <Import Project="$(_ParentDirectoryBuildPropsPath)" Condition="Exists('$(_ParentDirectoryBuildPropsPath)')"/>
   
   <PropertyGroup>
-    <DeterministicSourcePaths>false</DeterministicSourcePaths>
-    <IsPackable>false</IsPackable>
-    <GenerateDocumentationFile>false</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);FS2003;1591</NoWarn>
-    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+    <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Deterministic>true</Deterministic>
+    <DeterministicSourcePaths Condition="'$(ContinuousIntegrationBuild)' != 'true'">false</DeterministicSourcePaths>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-*" PrivateAssets="all"/>
+  </ItemGroup>
 
 </Project>

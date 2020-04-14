@@ -5,8 +5,14 @@ using System;
 
 namespace Orleans.Persistence
 {
+    /// <summary>
+    /// Factory used to create instances of Redis grain storage.
+    /// </summary>
     public static class RedisGrainStorageFactory
     {
+        /// <summary>
+        /// Creates a grain storage instance.
+        /// </summary>
         public static IGrainStorage Create(IServiceProvider services, string name)
         {
             IOptionsSnapshot<RedisStorageOptions> optionsSnapshot = services.GetRequiredService<IOptionsSnapshot<RedisStorageOptions>>();

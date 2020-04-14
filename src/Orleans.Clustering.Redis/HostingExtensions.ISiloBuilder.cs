@@ -6,9 +6,15 @@ using Orleans.Clustering.Redis;
 
 namespace Microsoft.Extensions.Hosting
 {
+    /// <summary>
+    /// Hosting extensions for the Redis clustering provider.
+    /// </summary>
     public static class RedisClusteringISiloBuilderExtensions
     {
-        public static ISiloBuilder UseRedisClustering(this ISiloBuilder builder, Action<RedisOptions> configuration)
+        /// <summary>
+        /// Configures Redis as the clustering provider.
+        /// </summary>
+        public static ISiloBuilder UseRedisClustering(this ISiloBuilder builder, Action<RedisClusteringOptions> configuration)
         {
             return builder.ConfigureServices(services =>
             {
@@ -21,10 +27,13 @@ namespace Microsoft.Extensions.Hosting
             });
         }
 
+        /// <summary>
+        /// Configures Redis as the clustering provider.
+        /// </summary>
         public static ISiloBuilder UseRedisClustering(this ISiloBuilder builder, string redisConnectionString, int db = 0)
         {
             return builder.ConfigureServices(services => services
-                .Configure<RedisOptions>(options => { options.Database = db; options.ConnectionString = redisConnectionString; })
+                .Configure<RedisClusteringOptions>(options => { options.Database = db; options.ConnectionString = redisConnectionString; })
                 .AddRedis());
         }
 
