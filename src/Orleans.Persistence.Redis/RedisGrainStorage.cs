@@ -123,7 +123,7 @@ namespace Orleans.Persistence
                     var etagEntry = hashEntries.Single(e => e.Name == "etag");
                     var valueEntry = hashEntries.Single(e => e.Name == "data");
                     if (_options.UseJson)
-                        grainState.State = JsonConvert.DeserializeObject(valueEntry.Value, grainState.State.GetType(), _jsonSettings);
+                        grainState.State = JsonConvert.DeserializeObject(valueEntry.Value, grainState.State.GetType());
                     else
                         grainState.State = _serializationManager.DeserializeFromByteArray<object>(valueEntry.Value);
                     grainState.ETag = etagEntry.Value;
@@ -162,7 +162,7 @@ namespace Orleans.Persistence
             var newEtag = Guid.NewGuid().ToString();
             if (_options.UseJson)
             {
-                var payload = JsonConvert.SerializeObject(grainState.State, _jsonSettings);
+                var payload = JsonConvert.SerializeObject(grainState.State);
                 var args = new { key, etag = grainState.ETag ?? "null", newEtag, data = payload };
                 response = await _db.ScriptEvaluateAsync(_preparedWriteScript, args);
             }
