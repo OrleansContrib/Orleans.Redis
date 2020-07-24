@@ -144,7 +144,7 @@ namespace Orleans.Runtime.ReminderService
 
             timer.Stop();
             _logger.LogInformation(
-                $"ReadRows: PrimaryKey={key} GrainId={grainReference} from Database={_db.Database}, finished in {timer.Elapsed.TotalMilliseconds:0.00} ms");
+                $"ReadRows: PrimaryKey={key} GrainId={grainReference} from Database={_db.Database} rows={result.Reminders.Count}, finished in {timer.Elapsed.TotalMilliseconds:0.00} ms");
             return result;
         }
 
@@ -194,7 +194,7 @@ namespace Orleans.Runtime.ReminderService
 
             timer.Stop();
             _logger.LogInformation(
-                $"ClearTable: ServiceId={_serviceId} from Database={_db.Database}, finished in {timer.Elapsed.TotalMilliseconds:0.00} ms");
+                $"ReadRows: ServiceId={_serviceId} from Database={_db.Database} rows={result.Reminders.Count}, finished in {timer.Elapsed.TotalMilliseconds:0.00} ms");
             return result;
         }
 
@@ -290,14 +290,14 @@ namespace Orleans.Runtime.ReminderService
             var timer = Stopwatch.StartNew();
             var pattern = $"*|Reminder|{(_storageOptions.UseJson ? "json" : "binary")}";
             var keys = _storageOptions.DatabaseNumber.HasValue
-                ? _server.Keys(_storageOptions.DatabaseNumber.Value, pattern)
-                : _server.Keys(pattern: pattern);
+                ? _server.Keys(_storageOptions.DatabaseNumber.Value, pattern).ToArray()
+                : _server.Keys(pattern: pattern).ToArray();
 
-            await _db.KeyDeleteAsync(keys.ToArray());
+            await _db.KeyDeleteAsync(keys);
 
             timer.Stop();
             _logger.LogInformation(
-                $"ClearTable: ServiceId={_serviceId} from Database={_db.Database}, finished in {timer.Elapsed.TotalMilliseconds:0.00} ms");
+                $"ClearTable: ServiceId={_serviceId} from Database={_db.Database} rows={keys.Length}, finished in {timer.Elapsed.TotalMilliseconds:0.00} ms");
         }
     }
 }
