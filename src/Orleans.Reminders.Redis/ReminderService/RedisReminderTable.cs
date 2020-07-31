@@ -103,8 +103,8 @@ namespace Orleans.Runtime.ReminderService
                 _server = _connection.GetServer(_storageOptions.DataConnectionString.Split(',')[0]);
 
                 timer.Stop();
-                _logger.LogInformation(
-                    $"Init: ServiceId={_serviceId}, initialized in {timer.Elapsed.TotalMilliseconds:0.00} ms");
+                //_logger.LogInformation(
+                //    $"Init: ServiceId={_serviceId}, initialized in {timer.Elapsed.TotalMilliseconds:0.00} ms");
             }
             catch (Exception ex)
             {
@@ -143,8 +143,8 @@ namespace Orleans.Runtime.ReminderService
             }
 
             timer.Stop();
-            _logger.LogInformation(
-                $"ReadRows: PrimaryKey={key} GrainId={grainReference} from Database={_db.Database} rows={result.Reminders.Count}, finished in {timer.Elapsed.TotalMilliseconds:0.00} ms");
+            //_logger.LogInformation(
+            //    $"ReadRows: PrimaryKey={key} GrainId={grainReference} from Database={_db.Database} rows={result.Reminders.Count}, finished in {timer.Elapsed.TotalMilliseconds:0.00} ms");
             return result;
         }
 
@@ -193,8 +193,8 @@ namespace Orleans.Runtime.ReminderService
             }
 
             timer.Stop();
-            _logger.LogInformation(
-                $"ReadRows: ServiceId={_serviceId} from Database={_db.Database} rows={result.Reminders.Count}, finished in {timer.Elapsed.TotalMilliseconds:0.00} ms");
+            //_logger.LogInformation(
+            //    $"ReadRows: ServiceId={_serviceId} from Database={_db.Database} rows={result.Reminders.Count}, finished in {timer.Elapsed.TotalMilliseconds:0.00} ms");
             return result;
         }
 
@@ -220,8 +220,8 @@ namespace Orleans.Runtime.ReminderService
             }
 
             timer.Stop();
-            _logger.LogInformation(
-                $"ReadRow: PrimaryKey={key} GrainId={grainReference} ReminderName={reminderName} from Database={_db.Database}, finished in {timer.Elapsed.TotalMilliseconds:0.00} ms");
+            //_logger.LogInformation(
+            //    $"ReadRow: PrimaryKey={key} GrainId={grainReference} ReminderName={reminderName} from Database={_db.Database}, finished in {timer.Elapsed.TotalMilliseconds:0.00} ms");
             return reminderEntry;
         }
 
@@ -243,8 +243,8 @@ namespace Orleans.Runtime.ReminderService
                 await _db.HashSetAsync(key, info.ReminderName, _serializationManager.SerializeToByteArray(info));
 
             timer.Stop();
-            _logger.LogInformation(
-                $"UpsertRow: PrimaryKey={key} GrainId={entry.GrainRef} ReminderName={entry.ReminderName} from Database={_db.Database}, finished in {timer.Elapsed.TotalMilliseconds:0.00} ms");
+            //_logger.LogInformation(
+            //    $"UpsertRow: PrimaryKey={key} GrainId={entry.GrainRef} ReminderName={entry.ReminderName} from Database={_db.Database}, finished in {timer.Elapsed.TotalMilliseconds:0.00} ms");
             return info.ETag;
         }
 
@@ -276,8 +276,8 @@ namespace Orleans.Runtime.ReminderService
             }
 
             timer.Stop();
-            _logger.LogInformation(
-                $"RemoveRow: PrimaryKey={key} GrainId={grainReference} ReminderName={reminderName} from Database={_db.Database}, finished in {timer.Elapsed.TotalMilliseconds:0.00} ms");
+            //_logger.LogInformation(
+            //    $"RemoveRow: PrimaryKey={key} GrainId={grainReference} ReminderName={reminderName} from Database={_db.Database}, finished in {timer.Elapsed.TotalMilliseconds:0.00} ms");
             return remove;
         }
 
@@ -296,8 +296,8 @@ namespace Orleans.Runtime.ReminderService
             await _db.KeyDeleteAsync(keys);
 
             timer.Stop();
-            _logger.LogInformation(
-                $"ClearTable: ServiceId={_serviceId} from Database={_db.Database} rows={keys.Length}, finished in {timer.Elapsed.TotalMilliseconds:0.00} ms");
+            //_logger.LogInformation(
+            //    $"ClearTable: ServiceId={_serviceId} from Database={_db.Database} rows={keys.Length}, finished in {timer.Elapsed.TotalMilliseconds:0.00} ms");
         }
     }
 }
