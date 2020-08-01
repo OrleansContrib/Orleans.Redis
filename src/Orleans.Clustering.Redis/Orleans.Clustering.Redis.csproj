@@ -16,4 +16,8 @@
     <PackageReference Include="StackExchange.Redis" Version="2.1.30" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Update="Microsoft.SourceLink.GitHub" Version="1.0.0" />
+  </ItemGroup>
+
 </Project>
