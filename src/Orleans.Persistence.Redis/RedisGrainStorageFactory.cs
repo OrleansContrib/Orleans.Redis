@@ -15,8 +15,8 @@ namespace Orleans.Persistence
         /// </summary>
         public static IGrainStorage Create(IServiceProvider services, string name)
         {
-            IOptionsSnapshot<RedisStorageOptions> optionsSnapshot = services.GetRequiredService<IOptionsSnapshot<RedisStorageOptions>>();
-            return ActivatorUtilities.CreateInstance<RedisGrainStorage>(services, optionsSnapshot.Get(name), name);
+            IOptionsMonitor<RedisStorageOptions> options = services.GetRequiredService<IOptionsMonitor<RedisStorageOptions>>();
+            return ActivatorUtilities.CreateInstance<RedisGrainStorage>(services, options.Get(name), name);
         }
     }
 }

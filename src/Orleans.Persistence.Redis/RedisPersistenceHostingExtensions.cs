@@ -112,7 +112,7 @@ namespace Microsoft.Extensions.Hosting
             Action<OptionsBuilder<RedisStorageOptions>> configureOptions = null)
         {
             configureOptions?.Invoke(services.AddOptions<RedisStorageOptions>(name));
-            services.AddTransient<IConfigurationValidator>(sp => new RedisStorageOptionsValidator(sp.GetService<IOptionsSnapshot<RedisStorageOptions>>().Get(name), name));
+            services.AddTransient<IConfigurationValidator>(sp => new RedisStorageOptionsValidator(sp.GetService<IOptionsMonitor<RedisStorageOptions>>().Get(name), name));
             services.ConfigureNamedOptionForLogging<RedisStorageOptions>(name);
             services.TryAddSingleton(sp => sp.GetServiceByName<IGrainStorage>(ProviderConstants.DEFAULT_STORAGE_PROVIDER_NAME));
             return services.AddSingletonNamedService(name, RedisGrainStorageFactory.Create)
