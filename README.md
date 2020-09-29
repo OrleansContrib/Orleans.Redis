@@ -87,7 +87,7 @@ Tell Orleans runtime that we are going to use Redis as our Cluster Membership Pr
 ```cs
 var silo = new SiloHostBuilder()
         ...
-        .UseRedisMembership(opt =>
+        .UseRedisClustering(opt =>
         {
             opt.ConnectionString = "host:port";
             opt.Database = 0;
@@ -109,7 +109,7 @@ Now that our silo is up and running, the Orleans client needs to connect to the 
 ```cs
 var client = new ClientBuilder()
         ...
-        .UseRedisMembership(opt =>
+        .UseRedisClustering(opt =>
         {
             opt.ConnectionString = "host:port";
             opt.Database = 0;
