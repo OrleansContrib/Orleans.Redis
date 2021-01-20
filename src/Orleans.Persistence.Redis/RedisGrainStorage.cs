@@ -48,10 +48,10 @@ namespace Orleans.Persistence
             RedisStorageOptions options, 
             SerializationManager serializationManager,
             IOptions<ClusterOptions> clusterOptions, 
-            ILoggerFactory loggerFactory)
+            ILogger<RedisGrainStorage> logger)
         {
             _name = name;
-            _logger = loggerFactory.CreateLogger($"{typeof(RedisGrainStorage).FullName}.{name}");
+            _logger = logger;
             _options = options;
             _serializationManager = serializationManager;
             _serviceId = clusterOptions.Value.ServiceId;
@@ -71,17 +71,24 @@ namespace Orleans.Persistence
 
             try
             {
-                var initMsg = string.Format("Init: Name={0} ServiceId={1} DatabaseNumber={2} UseJson={3} DeleteOnClear={4}",
-                        _name, _serviceId, _options.DatabaseNumber, _options.UseJson, _options.DeleteOnClear);
-                _logger.LogInformation($"RedisGrainStorage {_name} is initializing: {initMsg}");
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    var initMsg = string.Format("Init: Name={0} ServiceId={1} DatabaseNumber={2} UseJson={3} DeleteOnClear={4}",
+                            _name, _serviceId, _options.DatabaseNumber, _options.UseJson, _options.DeleteOnClear);
+                    _logger.LogDebug($"RedisGrainStorage {_name} is initializing: {initMsg}");
+                }
 
-                _redisOptions = ConfigurationOptions.Parse(_options.DataConnectionString);
+                _redisOptions = ConfigurationOptions.Parse(_options.ConnectionString);
                 _connection = await ConnectionMultiplexer.ConnectAsync(_redisOptions);
 
                 if (_options.DatabaseNumber.HasValue)
+                {
                     _db = _connection.GetDatabase(_options.DatabaseNumber.Value);
+                }
                 else
+                {
                     _db = _connection.GetDatabase();
+                }
 
                 _preparedWriteScript = LuaScript.Prepare(_writeScript);
 
@@ -95,9 +102,12 @@ namespace Orleans.Persistence
                 }
                 await Task.WhenAll(loadTasks);
 
-                timer.Stop();
-                _logger.LogInformation("Init: Name={0} ServiceId={1}, initialized in {2} ms",
-                    _name, _serviceId, timer.Elapsed.TotalMilliseconds.ToString("0.00"));
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    timer.Stop();
+                    _logger.LogDebug("Init: Name={0} ServiceId={1}, initialized in {2} ms",
+                        _name, _serviceId, timer.Elapsed.TotalMilliseconds.ToString("0.00"));
+                }
             }
             catch (Exception ex)
             {
@@ -111,8 +121,6 @@ namespace Orleans.Persistence
         /// <inheritdoc />
         public async Task ReadStateAsync(string grainType, GrainReference grainReference, IGrainState grainState)
         {
-            var timer = Stopwatch.StartNew();
-
             var key = GetKey(grainReference);
 
             try
@@ -123,17 +131,20 @@ namespace Orleans.Persistence
                     var etagEntry = hashEntries.Single(e => e.Name == "etag");
                     var valueEntry = hashEntries.Single(e => e.Name == "data");
                     if (_options.UseJson)
+                    {
                         grainState.State = JsonConvert.DeserializeObject(valueEntry.Value, grainState.State.GetType(), _jsonSettings);
+                    }
                     else
+                    {
                         grainState.State = _serializationManager.DeserializeFromByteArray<object>(valueEntry.Value);
+                    }
+
                     grainState.ETag = etagEntry.Value;
-                } else
+                }
+                else
                 {
                     grainState.ETag = Guid.NewGuid().ToString();
                 }
-                timer.Stop();
-                _logger.LogInformation("Reading: GrainType={0} Pk={1} Grainid={2} ETag={3} from Database={4}, finished in {5} ms",
-                    grainType, key, grainReference, grainState.ETag, _db.Database, timer.Elapsed.TotalMilliseconds.ToString("0.00"));
             }
             catch (RedisServerException)
             {
@@ -141,25 +152,25 @@ namespace Orleans.Persistence
                 if (stringValue.HasValue)
                 {
                     if (_options.UseJson)
+                    {
                         grainState.State = JsonConvert.DeserializeObject(stringValue, grainState.State.GetType(), _jsonSettings);
+                    }
                     else
+                    {
                         grainState.State = _serializationManager.DeserializeFromByteArray<object>(stringValue);
+                    }
                 }
                 grainState.ETag = Guid.NewGuid().ToString();
-                timer.Stop();
-                _logger.LogInformation("Reading: GrainType={0} Pk={1} Grainid={2} ETag={3} from Database={4}, finished in {5} ms (migrated old Redis data, grain now supports ETag)",
-                    grainType, key, grainReference, grainState.ETag, _db.Database, timer.Elapsed.TotalMilliseconds.ToString("0.00"));
             }
         }
 
         /// <inheritdoc />
         public async Task WriteStateAsync(string grainType, GrainReference grainReference, IGrainState grainState)
         {
-            var timer = Stopwatch.StartNew();
             var key = GetKey(grainReference);
-
-            RedisResult response = null;
             var newEtag = Guid.NewGuid().ToString();
+
+            RedisResult response;
             if (_options.UseJson)
             {
                 var payload = JsonConvert.SerializeObject(grainState.State, _jsonSettings);
@@ -175,30 +186,17 @@ namespace Orleans.Persistence
 
             if (response.IsNull)
             {
-                timer.Stop();
-                _logger.LogError("Writing: GrainType={0} PrimaryKey={1} Grainid={2} ETag={3} to Database={4}, finished in {5} ms - Error: ETag mismatch!",
-                    grainType, key, grainReference, grainState.ETag, _db.Database, timer.Elapsed.TotalMilliseconds.ToString("0.00"));
                 throw new InconsistentStateException($"ETag mismatch - tried with ETag: {grainState.ETag}");
             }
 
             grainState.ETag = newEtag;
-
-            timer.Stop();
-            _logger.LogInformation("Writing: GrainType={0} PrimaryKey={1} Grainid={2} ETag={3} to Database={4}, finished in {5} ms",
-                grainType, key, grainReference, grainState.ETag, _db.Database, timer.Elapsed.TotalMilliseconds.ToString("0.00"));
         }
 
         /// <inheritdoc />
         public async Task ClearStateAsync(string grainType, GrainReference grainReference, IGrainState grainState)
         {
-            var timer = Stopwatch.StartNew();
             var key = GetKey(grainReference);
-
             await _db.KeyDeleteAsync(key);
-
-            timer.Stop();
-            _logger.LogInformation("Clearing: GrainType={0} Pk={1} Grainid={2} ETag={3} to Database={4}, finished in {5} ms",
-                grainType, key, grainReference, grainState.ETag, _db.Database, timer.Elapsed.TotalMilliseconds.ToString("0.00"));
         }
 
         private string GetKey(GrainReference grainReference)
@@ -209,7 +207,10 @@ namespace Orleans.Persistence
 
         private async Task Close(CancellationToken cancellationToken)
         {
-            if (_connection is null) return;
+            if (_connection is null)
+            {
+                return;
+            }
 
             await _connection.CloseAsync();
             _connection.Dispose();
