@@ -145,7 +145,9 @@ namespace Orleans.Clustering.Redis.Test
             data = await this.membershipTable.ReadAll();
 
             if (extendedProtocol)
+            {
                 Assert.Equal(1, data.Version.Version);
+            }
 
             Assert.Equal(1, data.Members.Count);
         }
@@ -177,7 +179,9 @@ namespace Orleans.Clustering.Redis.Test
             data = await this.membershipTable.ReadAll();
 
             if (extendedProtocol)
+            {
                 Assert.Equal(1, data.Version.Version);
+            }
 
             TableVersion nextTableVersion = data.Version.Next();
 
@@ -190,7 +194,9 @@ namespace Orleans.Clustering.Redis.Test
 
             data = await this.membershipTable.ReadRow(newEntry.SiloAddress);
             if (extendedProtocol)
+            {
                 Assert.Equal(newTableVersion.Version, data.Version.Version);
+            }
 
             this.logger?.Info("Membership.ReadRow returned TableVersion={0} Data={1}", data.Version, data);
 
@@ -323,7 +329,9 @@ namespace Orleans.Clustering.Redis.Test
                 Assert.Equal(etagBefore, etagAfter);
                 Assert.NotNull(tableData.Version);
                 if (extendedProtocol)
+                {
                     Assert.Equal(tableVersion.Version, tableData.Version.Version);
+                }
 
                 Assert.Equal(i, tableData.Members.Count);
             }
@@ -361,7 +369,9 @@ namespace Orleans.Clustering.Redis.Test
             Assert.NotNull(tableData.Version);
 
             if (extendedProtocol)
+            {
                 Assert.Equal(20, tableData.Version.Version);
+            }
 
             Assert.Equal(1, tableData.Members.Count);
         }

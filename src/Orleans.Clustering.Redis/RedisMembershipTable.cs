@@ -83,9 +83,21 @@ namespace Orleans.Clustering.Redis
 
             var success = await tx.ExecuteAsync();
 
-            if (success) return UpsertResult.Success;
-            if (!versionCondition.WasSatisfied) return UpsertResult.Conflict;
-            if (!insertCondition.WasSatisfied) return UpsertResult.Failure;
+            if (success)
+            {
+                return UpsertResult.Success;
+            }
+
+            if (!versionCondition.WasSatisfied)
+            {
+                return UpsertResult.Conflict;
+            }
+
+            if (!insertCondition.WasSatisfied)
+            {
+                return UpsertResult.Failure;
+            }
+
             return UpsertResult.Failure;
         }
 
@@ -197,7 +209,11 @@ namespace Orleans.Clustering.Redis
 
         private static TableVersion DeserializeVersion(string versionString)
         {
-            if (string.IsNullOrWhiteSpace(versionString)) return DefaultTableVersion;
+            if (string.IsNullOrWhiteSpace(versionString))
+            {
+                return DefaultTableVersion;
+            }
+
             var version = int.Parse(versionString);
             return new TableVersion(version, versionString);
         }

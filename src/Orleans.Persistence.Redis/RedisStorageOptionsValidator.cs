@@ -17,13 +17,20 @@ namespace Orleans.Persistence
         {
             var msg = $"Configuration for {nameof(RedisGrainStorage)} - {_name} is invalid";
             if (_options == null)
+            {
                 throw new OrleansConfigurationException($"{msg} - {nameof(RedisStorageOptions)} is null");
-            if (string.IsNullOrWhiteSpace(_options.DataConnectionString))
-                throw new OrleansConfigurationException($"{msg} - {nameof(_options.DataConnectionString)} is null or empty");
+            }
+
+            if (string.IsNullOrWhiteSpace(_options.ConnectionString))
+            {
+                throw new OrleansConfigurationException($"{msg} - {nameof(_options.ConnectionString)} is null or empty");
+            }
 
             // host:port delimiter
-            if (!_options.DataConnectionString.Contains(":"))
-                throw new OrleansConfigurationException($"{msg} - {nameof(_options.DataConnectionString)} invalid format: {_options.DataConnectionString}, should contain host and port delimited by ':'");
+            if (!_options.ConnectionString.Contains(":"))
+            {
+                throw new OrleansConfigurationException($"{msg} - {nameof(_options.ConnectionString)} invalid format: {_options.ConnectionString}, should contain host and port delimited by ':'");
+            }
         }
     }
 }

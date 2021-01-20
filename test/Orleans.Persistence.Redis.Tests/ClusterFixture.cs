@@ -59,18 +59,18 @@ namespace Orleans.Persistence.Redis.Tests
                 builder.AddRedisGrainStorage("REDIS-JSON", optionsBuilder => optionsBuilder.Configure(options =>
                 {
                     options.UseJson = true;
-                    options.DataConnectionString = redisEP;
+                    options.ConnectionString = redisEP;
                 }));
                 builder.AddRedisGrainStorage("REDIS-BINARY", optionsBuilder => optionsBuilder.Configure(options =>
                 {
                     options.UseJson = false;
-                    options.DataConnectionString = redisEP;
+                    options.ConnectionString = redisEP;
                 }));
 
                 builder.AddRedisGrainStorage("PubSubStore", optionsBuilder => optionsBuilder.Configure(options =>
                 {
                     options.UseJson = false;
-                    options.DataConnectionString = redisEP;
+                    options.ConnectionString = redisEP;
                 }));
 
                 builder.AddSimpleMessageStreamProvider("SMSProvider");

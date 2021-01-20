@@ -36,7 +36,7 @@ namespace Orleans.Persistence.Redis.Tests
                     })
                     .AddRedisGrainStorage("Redis", optionsBuilder => optionsBuilder.Configure(options =>
                     {
-                        options.DataConnectionString = connectionString;
+                        options.ConnectionString = connectionString;
                     }))
                     .Build();
             });
