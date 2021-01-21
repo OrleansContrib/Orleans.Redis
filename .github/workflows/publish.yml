@@ -18,6 +18,4 @@ jobs:
       run: dotnet pack -c Release -o packages
     - name: Publish
       run: |
-       dotnet nuget push ./packages/Orleans.Persistence.* --source https://api.nuget.org/v3/index.json -k ${{secrets.NUGET_KEY}} 
-       dotnet nuget push ./packages/Orleans.Clustering.* --source https://api.nuget.org/v3/index.json -k ${{secrets.NUGET_KEY}} 
-       
+       dotnet nuget push "./packages/*.nupkg" --source https://api.nuget.org/v3/index.json -k ${{secrets.NUGET_KEY}}        
