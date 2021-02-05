@@ -9,6 +9,8 @@ using System;
 using Orleans.Storage;
 using Orleans.Persistence;
 using Orleans;
+using Orleans.Persistence.Redis.Serialization;
+using Orleans.Serialization;
 
 namespace Microsoft.Extensions.Hosting
 {
@@ -112,9 +114,11 @@ namespace Microsoft.Extensions.Hosting
             Action<OptionsBuilder<RedisStorageOptions>> configureOptions = null)
         {
             configureOptions?.Invoke(services.AddOptions<RedisStorageOptions>(name));
+            
             services.AddTransient<IConfigurationValidator>(sp => new RedisStorageOptionsValidator(sp.GetService<IOptionsMonitor<RedisStorageOptions>>().Get(name), name));
             services.ConfigureNamedOptionForLogging<RedisStorageOptions>(name);
             services.TryAddSingleton(sp => sp.GetServiceByName<IGrainStorage>(ProviderConstants.DEFAULT_STORAGE_PROVIDER_NAME));
+            
             return services.AddSingletonNamedService(name, RedisGrainStorageFactory.Create)
                            .AddSingletonNamedService(name, (s, n) => (ILifecycleParticipant<ISiloLifecycle>)s.GetRequiredServiceByName<IGrainStorage>(n));
         }
