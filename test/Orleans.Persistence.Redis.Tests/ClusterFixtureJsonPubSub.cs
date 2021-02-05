@@ -8,11 +8,11 @@ using System.Collections.Generic;
 
 namespace Orleans.Persistence.Redis.Tests
 {
-    public class ClusterFixture : IDisposable
+    public class ClusterFixtureJsonPubSub : IDisposable
     {
         private readonly ConnectionMultiplexer _redis;
 
-        public ClusterFixture()
+        public ClusterFixtureJsonPubSub()
         {
             var builder = new TestClusterBuilder(1);
             builder.Options.ServiceId = "Service";
@@ -68,7 +68,7 @@ namespace Orleans.Persistence.Redis.Tests
 
                 builder.AddRedisGrainStorage("PubSubStore", optionsBuilder => optionsBuilder.Configure(options =>
                 {
-                    options.UseJson = false;
+                    options.UseJson = true;
                     options.ConnectionString = redisEP;
                 }));
 
