@@ -9,6 +9,11 @@ namespace Orleans.Persistence.Redis.Serialization
     public interface IRedisDataSerializer
     {
         /// <summary>
+        /// The format specifier that can be used as part of the redis key.
+        /// </summary>
+        string FormatSpecifier { get; }
+        
+        /// <summary>
         /// Serializes the item as a <see cref="RedisValue"/>. The actual backing type is determined by the serializer implementation.
         /// </summary>
         /// <param name="item">The object to serialize.</param>
