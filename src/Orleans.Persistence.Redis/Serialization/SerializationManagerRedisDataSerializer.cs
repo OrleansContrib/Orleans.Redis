@@ -21,6 +21,9 @@ namespace Orleans.Persistence.Redis.Serialization
         }
 
         /// <inheritdoc />
+        public string FormatSpecifier => "binary";
+
+        /// <inheritdoc />
         public RedisValue SerializeObject(object item)
         {
             return _serializationManager.SerializeToByteArray(item);

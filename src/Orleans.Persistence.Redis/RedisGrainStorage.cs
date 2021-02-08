@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using Orleans.Configuration;
 using Orleans.Persistence.Redis;
 using Orleans.Persistence.Redis.Serialization;
@@ -271,8 +270,7 @@ namespace Orleans.Persistence
 
         private string GetKey(GrainReference grainReference)
         {
-            var format = _options.UseJson ? "json" : "binary";
-            return $"{grainReference.ToKeyString()}|{format}";
+            return $"{grainReference.ToKeyString()}|{_serializer.FormatSpecifier}";
         }
 
         private async Task Close(CancellationToken cancellationToken)

@@ -26,6 +26,9 @@ namespace Orleans.Persistence.Redis.Serialization
         }
 
         /// <inheritdoc />
+        public string FormatSpecifier => "json";
+
+        /// <inheritdoc />
         public RedisValue SerializeObject(object item)
         {
             return JsonConvert.SerializeObject(item, _jsonSettings);
