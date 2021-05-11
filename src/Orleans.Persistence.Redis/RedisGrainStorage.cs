@@ -19,7 +19,7 @@ namespace Orleans.Persistence
     /// </summary>
     public class RedisGrainStorage : IGrainStorage, ILifecycleParticipant<ISiloLifecycle>
     {
-        private const string _writeScript = "local etag = redis.call('HGET', @key, 'etag')\nif etag == false or etag == @etag then return redis.call('HMSET', @key, 'etag', @newEtag, 'data', @data) else return false end";
+        private const string _writeScript = "local etag = redis.call('HGET', KEYS[1], 'etag')\nif etag == false or etag == ARGV[1] then return redis.call('HMSET', KEYS[1], 'etag', ARGV[2], 'data', ARGV[3]) else return false end";
         private readonly string _serviceId;
         private readonly string _name;
         private readonly SerializationManager _serializationManager;
@@ -39,15 +39,16 @@ namespace Orleans.Persistence
         private IDatabase _db;
         private ConfigurationOptions _redisOptions;
         private LuaScript _preparedWriteScript;
+        private byte[] _preparedWriteScriptHash;
 
         /// <summary>
         /// Creates a new instance of the <see cref="RedisGrainStorage"/> type.
         /// </summary>
         public RedisGrainStorage(
-            string name, 
-            RedisStorageOptions options, 
+            string name,
+            RedisStorageOptions options,
             SerializationManager serializationManager,
-            IOptions<ClusterOptions> clusterOptions, 
+            IOptions<ClusterOptions> clusterOptions,
             ILogger<RedisGrainStorage> logger)
         {
             _name = name;
@@ -92,7 +93,7 @@ namespace Orleans.Persistence
 
                 _preparedWriteScript = LuaScript.Prepare(_writeScript);
 
-                var loadTasks = new Task[_redisOptions.EndPoints.Count];
+                var loadTasks = new Task<LoadedLuaScript>[_redisOptions.EndPoints.Count];
                 for (int i = 0; i < _redisOptions.EndPoints.Count; i++)
                 {
                     var endpoint = _redisOptions.EndPoints.ElementAt(i);
@@ -101,6 +102,7 @@ namespace Orleans.Persistence
                     loadTasks[i] = _preparedWriteScript.LoadAsync(server);
                 }
                 await Task.WhenAll(loadTasks);
+                _preparedWriteScriptHash = loadTasks.First().Result.Hash;
 
                 if (_logger.IsEnabled(LogLevel.Debug))
                 {
@@ -174,14 +176,14 @@ namespace Orleans.Persistence
             if (_options.UseJson)
             {
                 var payload = JsonConvert.SerializeObject(grainState.State, _jsonSettings);
-                var args = new { key, etag = grainState.ETag ?? "null", newEtag, data = payload };
-                response = await _db.ScriptEvaluateAsync(_preparedWriteScript, args);
+                var args = new RedisValue[] { grainState.ETag ?? "null", newEtag, payload };
+                response = await _db.ScriptEvaluateAsync(_preparedWriteScriptHash, new RedisKey[] { key }, args);
             }
             else
             {
                 var payload = _serializationManager.SerializeToByteArray(grainState.State);
-                var args = new { key, etag = grainState.ETag ?? "null", newEtag, data = payload };
-                response = await _db.ScriptEvaluateAsync(_preparedWriteScript, args);
+                var args = new RedisValue[] { grainState.ETag ?? "null", newEtag, payload };
+                response = await _db.ScriptEvaluateAsync(_preparedWriteScriptHash, new RedisKey[] { key }, args);
             }
 
             if (response.IsNull)
