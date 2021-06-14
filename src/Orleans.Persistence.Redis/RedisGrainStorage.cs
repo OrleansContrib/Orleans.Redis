@@ -21,6 +21,7 @@ namespace Orleans.Persistence
     public class RedisGrainStorage : IGrainStorage, ILifecycleParticipant<ISiloLifecycle>
     {
         private const string WriteScript = "local etag = redis.call('HGET', KEYS[1], 'etag')\nif etag == false or etag == ARGV[1] then return redis.call('HMSET', KEYS[1], 'etag', ARGV[2], 'data', ARGV[3]) else return false end";
+
         private readonly string _serviceId;
         private readonly string _name;
         private readonly ILogger _logger;
@@ -37,8 +38,8 @@ namespace Orleans.Persistence
         /// Creates a new instance of the <see cref="RedisGrainStorage"/> type.
         /// </summary>
         public RedisGrainStorage(
-            string name, 
-            RedisStorageOptions options, 
+            string name,
+            RedisStorageOptions options,
             IRedisDataSerializer serializer,
             IOptions<ClusterOptions> clusterOptions,
             ILogger<RedisGrainStorage> logger)
@@ -47,7 +48,7 @@ namespace Orleans.Persistence
             _logger = logger;
             _options = options;
             _serializer = serializer;
-            
+
             _serviceId = clusterOptions.Value.ServiceId;
         }
 
@@ -259,8 +260,9 @@ namespace Orleans.Persistence
         private async Task<RedisResult> WriteToRedisAsync(object state, string etag, string key, string newEtag)
         {
             var payload = _serializer.SerializeObject(state);
+
             var args = new RedisValue[] { etag, newEtag, payload };
-            return await _db.ScriptEvaluateAsync(_preparedWriteScriptHash, new RedisKey[] { key }, args);
+            return await _db.ScriptEvaluateAsync(_preparedWriteScriptHash, new RedisKey[] { key }, args).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
