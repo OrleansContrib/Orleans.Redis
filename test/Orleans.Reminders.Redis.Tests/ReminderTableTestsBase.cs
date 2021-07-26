@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 
 using Orleans.Configuration;
 using Orleans.Internal;
+using Orleans.Reminders.Redis.TestGrainInterfaces;
 using Orleans.Runtime;
 using Orleans.TestingHost.Utils;
 
@@ -162,10 +163,8 @@ namespace Orleans.Reminders.Redis.Tests
 
         private GrainReference MakeTestGrainReference()
         {
-            throw new NotImplementedException();
-            //GrainId regularGrainId = GrainId.GetGrainIdForTesting(Guid.NewGuid());
-            //GrainReference grainRef = this.ClusterFixture.InternalGrainFactory.GetGrain(regularGrainId);
-            //return grainRef;
+            GrainReference grainRef = this.clusterFixture.Client.GetGrain<ITestGrain>(Guid.NewGuid()).GetReference().Result;
+            return grainRef;
         }
     }
 }

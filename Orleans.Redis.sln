@@ -21,7 +21,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Orleans.Persistence.Redis.T
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Orleans.Reminders.Redis", "src\Orleans.Reminders.Redis\Orleans.Reminders.Redis.csproj", "{A23EF007-F828-41DB-B116-6DE7F588CB2B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.Reminders.Redis.Tests", "test\Orleans.Reminders.Redis.Tests\Orleans.Reminders.Redis.Tests.csproj", "{93784B16-A101-4E1D-90E0-07321840A25A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Orleans.Reminders.Redis.Tests", "test\Orleans.Reminders.Redis.Tests\Orleans.Reminders.Redis.Tests.csproj", "{93784B16-A101-4E1D-90E0-07321840A25A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.Reminders.Redis.TestGrainInterfaces", "test\Orleans.Reminders.Redis.TestGrainInterfaces\Orleans.Reminders.Redis.TestGrainInterfaces.csproj", "{AE9BCC1F-5E37-4EB2-B7F6-B39480F305F1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.Reminders.Redis.TestGrains", "test\Orleans.Reminders.Redis.TestGrains\Orleans.Reminders.Redis.TestGrains.csproj", "{6BC99DF6-E0A0-4DE7-BBCF-B1CE40E67C1D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -129,6 +133,30 @@ Global
 		{93784B16-A101-4E1D-90E0-07321840A25A}.Release|x64.Build.0 = Release|Any CPU
 		{93784B16-A101-4E1D-90E0-07321840A25A}.Release|x86.ActiveCfg = Release|Any CPU
 		{93784B16-A101-4E1D-90E0-07321840A25A}.Release|x86.Build.0 = Release|Any CPU
+		{AE9BCC1F-5E37-4EB2-B7F6-B39480F305F1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AE9BCC1F-5E37-4EB2-B7F6-B39480F305F1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AE9BCC1F-5E37-4EB2-B7F6-B39480F305F1}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{AE9BCC1F-5E37-4EB2-B7F6-B39480F305F1}.Debug|x64.Build.0 = Debug|Any CPU
+		{AE9BCC1F-5E37-4EB2-B7F6-B39480F305F1}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{AE9BCC1F-5E37-4EB2-B7F6-B39480F305F1}.Debug|x86.Build.0 = Debug|Any CPU
+		{AE9BCC1F-5E37-4EB2-B7F6-B39480F305F1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AE9BCC1F-5E37-4EB2-B7F6-B39480F305F1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AE9BCC1F-5E37-4EB2-B7F6-B39480F305F1}.Release|x64.ActiveCfg = Release|Any CPU
+		{AE9BCC1F-5E37-4EB2-B7F6-B39480F305F1}.Release|x64.Build.0 = Release|Any CPU
+		{AE9BCC1F-5E37-4EB2-B7F6-B39480F305F1}.Release|x86.ActiveCfg = Release|Any CPU
+		{AE9BCC1F-5E37-4EB2-B7F6-B39480F305F1}.Release|x86.Build.0 = Release|Any CPU
+		{6BC99DF6-E0A0-4DE7-BBCF-B1CE40E67C1D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6BC99DF6-E0A0-4DE7-BBCF-B1CE40E67C1D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6BC99DF6-E0A0-4DE7-BBCF-B1CE40E67C1D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{6BC99DF6-E0A0-4DE7-BBCF-B1CE40E67C1D}.Debug|x64.Build.0 = Debug|Any CPU
+		{6BC99DF6-E0A0-4DE7-BBCF-B1CE40E67C1D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{6BC99DF6-E0A0-4DE7-BBCF-B1CE40E67C1D}.Debug|x86.Build.0 = Debug|Any CPU
+		{6BC99DF6-E0A0-4DE7-BBCF-B1CE40E67C1D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6BC99DF6-E0A0-4DE7-BBCF-B1CE40E67C1D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6BC99DF6-E0A0-4DE7-BBCF-B1CE40E67C1D}.Release|x64.ActiveCfg = Release|Any CPU
+		{6BC99DF6-E0A0-4DE7-BBCF-B1CE40E67C1D}.Release|x64.Build.0 = Release|Any CPU
+		{6BC99DF6-E0A0-4DE7-BBCF-B1CE40E67C1D}.Release|x86.ActiveCfg = Release|Any CPU
+		{6BC99DF6-E0A0-4DE7-BBCF-B1CE40E67C1D}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -142,6 +170,8 @@ Global
 		{619A3237-DA42-48FF-BD53-24F9725D1464} = {86C79925-18AA-447A-822E-A330505130C3}
 		{A23EF007-F828-41DB-B116-6DE7F588CB2B} = {94C41E08-6EAB-459D-8FDC-B91D463B7049}
 		{93784B16-A101-4E1D-90E0-07321840A25A} = {86C79925-18AA-447A-822E-A330505130C3}
+		{AE9BCC1F-5E37-4EB2-B7F6-B39480F305F1} = {86C79925-18AA-447A-822E-A330505130C3}
+		{6BC99DF6-E0A0-4DE7-BBCF-B1CE40E67C1D} = {86C79925-18AA-447A-822E-A330505130C3}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {1E10F65A-F5D3-4DEB-8BD4-7385C14ED77E}

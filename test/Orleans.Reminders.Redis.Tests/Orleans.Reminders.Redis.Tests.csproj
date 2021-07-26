@@ -26,6 +26,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Orleans.Reminders.Redis\Orleans.Reminders.Redis.csproj" />
+    <ProjectReference Include="..\Orleans.Reminders.Redis.TestGrainInterfaces\Orleans.Reminders.Redis.TestGrainInterfaces.csproj" />
+    <ProjectReference Include="..\Orleans.Reminders.Redis.TestGrains\Orleans.Reminders.Redis.TestGrains.csproj" />
   </ItemGroup>
 
 </Project>
