@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 using Orleans.Configuration;
+using Orleans.TestingHost;
 
 using Xunit;
 
@@ -13,7 +14,8 @@ namespace Orleans.Reminders.Redis.Tests
 {
     public class RedisRemindersTableTests : ReminderTableTestsBase, IClassFixture<ClusterFixture>
     {
-        public RedisRemindersTableTests(ClusterFixture clusterFixture) : base(clusterFixture, CreateFilters())
+        public RedisRemindersTableTests(ClusterFixture clusterFixture)
+            : base(clusterFixture, CreateFilters())
         {
         }
 
@@ -26,14 +28,14 @@ namespace Orleans.Reminders.Redis.Tests
 
         protected override IReminderTable CreateRemindersTable()
         {
-            var reminderTable = clusterFixture.Cluster.ServiceProvider.GetService<IReminderTable>();
+            var reminderTable = ((InProcessSiloHandle)clusterFixture.Cluster.Primary).SiloHost.Services.GetService<IReminderTable>();
             if (reminderTable is not RedisReminderTable)
                 throw new InvalidOperationException("RedisReminderTable not configured");
             return reminderTable;
         }
 
         [Fact]
-        public void RemindersTable_PostgreSql_Init()
+        public void RemindersTable_Redis_Init()
         {
         }
 

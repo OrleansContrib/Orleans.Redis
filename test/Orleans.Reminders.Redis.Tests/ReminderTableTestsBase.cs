@@ -32,6 +32,8 @@ namespace Orleans.Reminders.Redis.Tests
 
         protected ReminderTableTestsBase(ClusterFixture clusterFixture, LoggerFilterOptions filters)
         {
+            this.clusterFixture = clusterFixture;
+
             //fixture.InitializeConnectionStringAccessor(GetConnectionString);
             loggerFactory = TestingUtils.CreateDefaultLoggerFactory($"{GetType()}.log", filters);
             logger = loggerFactory.CreateLogger<ReminderTableTestsBase>();
@@ -44,7 +46,6 @@ namespace Orleans.Reminders.Redis.Tests
             IReminderTable rmndr = CreateRemindersTable();
             rmndr.Init().WithTimeout(TimeSpan.FromMinutes(1)).Wait();
             remindersTable = rmndr;
-            this.clusterFixture = clusterFixture;
         }
 
         public virtual void Dispose()
@@ -163,7 +164,7 @@ namespace Orleans.Reminders.Redis.Tests
 
         private GrainReference MakeTestGrainReference()
         {
-            GrainReference grainRef = this.clusterFixture.Client.GetGrain<ITestGrain>(Guid.NewGuid()).GetReference().Result;
+            GrainReference grainRef = this.clusterFixture.Client.GetGrain<IReminderTestGrain>(Guid.NewGuid()).GetReference().Result;
             return grainRef;
         }
     }

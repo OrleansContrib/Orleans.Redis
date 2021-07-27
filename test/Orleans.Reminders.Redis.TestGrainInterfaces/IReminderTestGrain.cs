@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Orleans.Reminders.Redis.TestGrainInterfaces
 {
-    public interface ITestGrain : IGrainWithGuidKey
+    public interface IReminderTestGrain : IGrainWithGuidKey
     {
         Task<GrainReference> GetReference();
     }

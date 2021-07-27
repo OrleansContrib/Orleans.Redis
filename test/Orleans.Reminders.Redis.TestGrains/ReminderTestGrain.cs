@@ -1,12 +1,11 @@
-﻿using Orleans.Providers;
-using Orleans.Runtime;
+﻿using System.Threading.Tasks;
+
 using Orleans.Reminders.Redis.TestGrainInterfaces;
-using System;
-using System.Threading.Tasks;
+using Orleans.Runtime;
 
 namespace Orleans.Reminders.Redis.TestGrains
 {
-    public class BinaryTestGrain : Grain, ITestGrain
+    public class ReminderTestGrain : Grain, IReminderTestGrain
     {
         public Task<GrainReference> GetReference()
         {
