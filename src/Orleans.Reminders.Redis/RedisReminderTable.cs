@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.Logging;
@@ -21,6 +23,7 @@ namespace Orleans.Reminders.Redis
         private readonly RedisReminderTableOptions _redisOptions;
         private readonly ClusterOptions _clusterOptions;
         private readonly ILogger _logger;
+        private readonly IGrainReferenceConverter _grainReferenceConverter;
         private IConnectionMultiplexer _muxer;
         private IDatabase _db;
 
@@ -38,13 +41,15 @@ namespace Orleans.Reminders.Redis
         public RedisReminderTable(
             ILogger<RedisReminderTable> logger,
             IOptions<ClusterOptions> clusterOptions,
-            IOptions<RedisReminderTableOptions> redisOptions)
+            IOptions<RedisReminderTableOptions> redisOptions,
+            IGrainReferenceConverter grainReferenceConverter)
         {
             _redisOptions = redisOptions.Value;
             _clusterOptions = clusterOptions.Value;
             _logger = logger;
 
             GrainHashIndexKey = GetGrainHashIndexKey(_clusterOptions.ServiceId);
+            _grainReferenceConverter = grainReferenceConverter;
         }
 
         public async Task Init()
@@ -53,38 +58,79 @@ namespace Orleans.Reminders.Redis
             _db = _muxer.GetDatabase(_redisOptions.DatabaseNumber ?? 0);
         }
 
-        public Task<ReminderEntry> ReadRow(GrainReference grainRef, string reminderName)
+        public async Task<ReminderEntry> ReadRow(GrainReference grainRef, string reminderName)
         {
             // fetch reminder by reminder key
-            throw new NotImplementedException();
+            RedisKey reminderKey = GetReminderKey(_clusterOptions.ServiceId, grainRef, reminderName);
+            RedisValue value = await _db.HashGetAsync(reminderKey, DataHashKey);
+            ReminderData data = JsonConvert.DeserializeObject<ReminderData>(value.ToString());
+            return data.ToEntry(_grainReferenceConverter);
         }
 
-        public Task<ReminderTableData> ReadRows(GrainReference key)
+        public async Task<ReminderTableData> ReadRows(GrainReference key)
         {
             // fetch reminders list by grain key
-
-            throw new NotImplementedException();
+            RedisKey grainKey = GetGrainKey(_clusterOptions.ServiceId, key);
+            RedisValue[] values = await _db.HashValuesAsync(grainKey);
+            IEnumerable<ReminderEntry> records = values
+                .Select(v =>
+                    JsonConvert.DeserializeObject<ReminderData>(v.ToString())
+                        .ToEntry(_grainReferenceConverter)
+                );
+            return new ReminderTableData(records);
         }
 
-        public Task<ReminderTableData> ReadRows(uint begin, uint end)
+        public async Task<ReminderTableData> ReadRows(uint begin, uint end)
         {
             // fetch reminders by grain hash range
-            throw new NotImplementedException();
+            IEnumerable<RedisValue> values;
+            if (begin < end)
+            {
+                // -----begin******end-----
+                values = await _db.SortedSetRangeByScoreAsync(GrainHashIndexKey, begin, end, Exclude.Start);
+            }
+            else
+            {
+                // *****end------begin*****
+                RedisValue[] values1 = await _db.SortedSetRangeByScoreAsync(GrainHashIndexKey, start: begin, exclude: Exclude.Start);
+                RedisValue[] values2 = await _db.SortedSetRangeByScoreAsync(GrainHashIndexKey, stop: end);
+                values = values1.Concat(values2);
+            }
+
+            IEnumerable<ReminderEntry> records = values
+                .Select(v =>
+                    JsonConvert.DeserializeObject<ReminderData>(v.ToString())
+                        .ToEntry(_grainReferenceConverter)
+                );
+            return new ReminderTableData(records);
         }
 
-        public Task<bool> RemoveRow(GrainReference grainRef, string reminderName, string eTag)
+        public async Task<bool> RemoveRow(GrainReference grainRef, string reminderName, string eTag)
         {
-            throw new NotImplementedException();
+            RedisKey reminderKey = GetReminderKey(_clusterOptions.ServiceId, grainRef, reminderName);
+            RedisKey grainKey = GetGrainKey(_clusterOptions.ServiceId, grainRef);
+
+            // get the original value, used for sorted set removal later
+            RedisValue value = await _db.HashGetAsync(reminderKey, DataHashKey);
+            if (!value.HasValue) return false;
+
+            ITransaction tx = _db.CreateTransaction();
+            tx.AddCondition(Condition.HashEqual(reminderKey, ETagHashKey, eTag));
+            tx.SortedSetRemoveAsync(GrainHashIndexKey, value).Ignore(); // delete value in grain hash set
+            tx.HashDeleteAsync(grainKey, reminderName).Ignore(); // delete value in grain hash set
+            tx.KeyDeleteAsync(reminderKey).Ignore(); // delete reminder key
+            bool success = await tx.ExecuteAsync();
+
+            return success;
         }
 
-        public Task TestOnlyClearTable()
+        public async Task TestOnlyClearTable()
         {
-            throw new NotImplementedException();
+            await _db.ExecuteAsync("FLUSHDB");
         }
 
         public async Task<string> UpsertRow(ReminderEntry entry)
         {
-
             if (_logger.IsEnabled(LogLevel.Debug))
             {
                 _logger.Debug("UpsertRow entry = {0}, etag = {1}", entry.ToString(), entry.ETag);
@@ -96,13 +142,7 @@ namespace Orleans.Reminders.Redis
             // Should we change it now?
             entry.ETag = newEtag;
 
-            ReminderData data = new ReminderData
-            {
-                GrainReference =entry.GrainRef.ToKeyString(),
-                ReminderName = entry.ReminderName,
-                StartAt = entry.StartAt,
-                Period = entry.Period
-            };
+            ReminderData data = ReminderData.Create(entry);
             string payload = JsonConvert.SerializeObject(data, _jsonSettings);
 
             ITransaction tx = _db.CreateTransaction();
@@ -110,12 +150,9 @@ namespace Orleans.Reminders.Redis
                 new HashEntry(ETagHashKey, newEtag),
                 new HashEntry(DataHashKey, payload)
             };
-            Task task1 = tx.HashSetAsync(reminderKey, hashEntries);
-            task1.Ignore();
-            Task<bool> task2 = tx.HashSetAsync(grainKey, entry.ReminderName, payload);
-            task2.Ignore();
-            Task<bool> task3 = tx.SortedSetAddAsync(GrainHashIndexKey, payload, entry.GrainRef.GetUniformHashCode());
-            task3.Ignore();
+            tx.HashSetAsync(reminderKey, hashEntries).Ignore();
+            tx.HashSetAsync(grainKey, entry.ReminderName, payload).Ignore();
+            tx.SortedSetAddAsync(GrainHashIndexKey, payload, entry.GrainRef.GetUniformHashCode()).Ignore();
 
             bool success = await tx.ExecuteAsync();
             if (success)
@@ -146,11 +183,38 @@ namespace Orleans.Reminders.Redis
         }
     }
 
-    public class ReminderData
+    internal class ReminderData
     {
+        public string ETag { get; set; }
         public string GrainReference { get; set; }
         public string ReminderName { get; set; }
         public DateTime StartAt { get; set; }
         public TimeSpan Period { get; set; }
+
+        public static ReminderData Create(ReminderEntry entry)
+        {
+            ReminderData data = new ReminderData
+            {
+                ETag = entry.ETag,
+                GrainReference = entry.GrainRef.ToKeyString(),
+                ReminderName = entry.ReminderName,
+                StartAt = entry.StartAt,
+                Period = entry.Period
+            };
+            return data;
+        }
+
+        public ReminderEntry ToEntry(IGrainReferenceConverter grainReferenceConverter)
+        {
+            ReminderEntry entry = new ReminderEntry
+            {
+                ETag = ETag,
+                GrainRef = grainReferenceConverter.GetGrainFromKeyString(GrainReference),
+                Period = Period,
+                ReminderName = ReminderName,
+                StartAt = StartAt
+            };
+            return entry;
+        }
     }
 }
