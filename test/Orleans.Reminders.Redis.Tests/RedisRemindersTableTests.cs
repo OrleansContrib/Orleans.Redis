@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 using Orleans.Configuration;
+using Orleans.Runtime;
 using Orleans.TestingHost;
 
 using Xunit;
@@ -21,7 +22,7 @@ namespace Orleans.Reminders.Redis.Tests
 
         private static LoggerFilterOptions CreateFilters()
         {
-            LoggerFilterOptions filters = new LoggerFilterOptions();
+            LoggerFilterOptions filters = new();
             filters.AddFilter(nameof(RedisRemindersTableTests), LogLevel.Trace);
             return filters;
         }
@@ -39,7 +40,6 @@ namespace Orleans.Reminders.Redis.Tests
         {
         }
 
-
         [Fact]
         public async Task RemindersTable_Redis_RemindersRange()
         {
@@ -56,6 +56,13 @@ namespace Orleans.Reminders.Redis.Tests
         public async Task RemindersTable_Redis_ReminderSimple()
         {
             await ReminderSimple();
+        }
+
+        [Fact]
+        public void UpsertRowShouldThrowWhenReminderNameInvalid()
+        {
+            ReminderEntry reminder = CreateReminder(MakeTestGrainReference(), "aa:bb");
+            Assert.ThrowsAsync<ReminderException>(() => remindersTable.UpsertRow(reminder));
         }
     }
 }

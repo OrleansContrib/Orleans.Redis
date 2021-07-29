@@ -17,9 +17,7 @@ namespace Orleans.Reminders.Redis
 {
     internal class RedisReminderTable : IReminderTable
     {
-        private static readonly RedisValue ETagHashKey = "ETag";
-        private static readonly RedisValue DataHashKey = "Data";
-        private readonly RedisKey GrainHashIndexKey;
+        private readonly RedisKey RemindersRedisKey;
         private readonly RedisReminderTableOptions _redisOptions;
         private readonly ClusterOptions _clusterOptions;
         private readonly ILogger _logger;
@@ -27,15 +25,12 @@ namespace Orleans.Reminders.Redis
         private IConnectionMultiplexer _muxer;
         private IDatabase _db;
 
-        private readonly JsonSerializerSettings _jsonSettings = new JsonSerializerSettings()
+        private readonly JsonSerializerSettings _jsonSettings = new()
         {
-            TypeNameHandling = TypeNameHandling.All,
-            PreserveReferencesHandling = PreserveReferencesHandling.Objects,
             DateFormatHandling = DateFormatHandling.IsoDateFormat,
             DefaultValueHandling = DefaultValueHandling.Ignore,
             MissingMemberHandling = MissingMemberHandling.Ignore,
             NullValueHandling = NullValueHandling.Ignore,
-            ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
         };
 
         public RedisReminderTable(
@@ -48,80 +43,62 @@ namespace Orleans.Reminders.Redis
             _clusterOptions = clusterOptions.Value;
             _logger = logger;
 
-            GrainHashIndexKey = GetGrainHashIndexKey(_clusterOptions.ServiceId);
+            RemindersRedisKey = $"{_clusterOptions.ServiceId}_Reminders";
             _grainReferenceConverter = grainReferenceConverter;
         }
 
         public async Task Init()
         {
             _muxer = await _redisOptions.CreateMultiplexer(_redisOptions);
-            _db = _muxer.GetDatabase(_redisOptions.DatabaseNumber ?? 0);
+            _db = _redisOptions.DatabaseNumber.HasValue
+                ? _muxer.GetDatabase(_redisOptions.DatabaseNumber.Value)
+                : _muxer.GetDatabase(_redisOptions.DatabaseNumber.Value);
         }
 
         public async Task<ReminderEntry> ReadRow(GrainReference grainRef, string reminderName)
         {
-            // fetch reminder by reminder key
-            RedisKey reminderKey = GetReminderKey(_clusterOptions.ServiceId, grainRef, reminderName);
-            RedisValue value = await _db.HashGetAsync(reminderKey, DataHashKey);
-            ReminderData data = JsonConvert.DeserializeObject<ReminderData>(value.ToString());
-            return data.ToEntry(_grainReferenceConverter);
+            // fetch reminder by reminder id
+            string filter = $"{GetReminderId(grainRef, reminderName)}:";
+            RedisValue[] values = await _db.SortedSetRangeByValueAsync(RemindersRedisKey, filter, filter + ((char)0xFF));
+            // if we need to check there should be only single values?
+            return ConvertToEntry(values.Single());
         }
 
         public async Task<ReminderTableData> ReadRows(GrainReference key)
         {
-            // fetch reminders list by grain key
-            RedisKey grainKey = GetGrainKey(_clusterOptions.ServiceId, key);
-            RedisValue[] values = await _db.HashValuesAsync(grainKey);
-            IEnumerable<ReminderEntry> records = values
-                .Select(v =>
-                    JsonConvert.DeserializeObject<ReminderData>(v.ToString())
-                        .ToEntry(_grainReferenceConverter)
-                );
+            string filter = $"{key.GetUniformHashCode():X8}_{key.ToKeyString()}_";
+            RedisValue[] values = await _db.SortedSetRangeByValueAsync(RemindersRedisKey, filter, filter + ((char)0xFF));
+            IEnumerable<ReminderEntry> records = values.Select(v => ConvertToEntry(v));
             return new ReminderTableData(records);
         }
 
         public async Task<ReminderTableData> ReadRows(uint begin, uint end)
         {
-            // fetch reminders by grain hash range
+            RedisValue filterBegin = $"{begin:X8}_";
+            RedisValue filterEnd = $"{end:X8}" + (char)('_' + 1);
             IEnumerable<RedisValue> values;
             if (begin < end)
             {
                 // -----begin******end-----
-                values = await _db.SortedSetRangeByScoreAsync(GrainHashIndexKey, begin, end, Exclude.Start);
+                values = await _db.SortedSetRangeByValueAsync(RemindersRedisKey, filterBegin, filterEnd);
             }
             else
             {
                 // *****end------begin*****
-                RedisValue[] values1 = await _db.SortedSetRangeByScoreAsync(GrainHashIndexKey, start: begin, exclude: Exclude.Start);
-                RedisValue[] values2 = await _db.SortedSetRangeByScoreAsync(GrainHashIndexKey, stop: end);
+                RedisValue[] values1 = await _db.SortedSetRangeByValueAsync(RemindersRedisKey, filterBegin, "FFFFFFFF" + ((char)0xFF));
+                RedisValue[] values2 = await _db.SortedSetRangeByValueAsync(RemindersRedisKey, "00000000_", filterEnd);
                 values = values1.Concat(values2);
             }
 
-            IEnumerable<ReminderEntry> records = values
-                .Select(v =>
-                    JsonConvert.DeserializeObject<ReminderData>(v.ToString())
-                        .ToEntry(_grainReferenceConverter)
-                );
+            IEnumerable<ReminderEntry> records = values.Select(v => ConvertToEntry(v));
             return new ReminderTableData(records);
         }
 
         public async Task<bool> RemoveRow(GrainReference grainRef, string reminderName, string eTag)
         {
-            RedisKey reminderKey = GetReminderKey(_clusterOptions.ServiceId, grainRef, reminderName);
-            RedisKey grainKey = GetGrainKey(_clusterOptions.ServiceId, grainRef);
-
-            // get the original value, used for sorted set removal later
-            RedisValue value = await _db.HashGetAsync(reminderKey, DataHashKey);
-            if (!value.HasValue) return false;
-
-            ITransaction tx = _db.CreateTransaction();
-            tx.AddCondition(Condition.HashEqual(reminderKey, ETagHashKey, eTag));
-            tx.SortedSetRemoveAsync(GrainHashIndexKey, value).Ignore(); // delete value in grain hash set
-            tx.HashDeleteAsync(grainKey, reminderName).Ignore(); // delete value in grain hash set
-            tx.KeyDeleteAsync(reminderKey).Ignore(); // delete reminder key
-            bool success = await tx.ExecuteAsync();
-
-            return success;
+            string filter = $"{GetReminderId(grainRef, reminderName)}:{eTag}:";
+            long removed = await _db.SortedSetRemoveRangeByValueAsync(RemindersRedisKey, filter, filter + ((char)0xFF));
+            return removed > 0;
         }
 
         public async Task TestOnlyClearTable()
@@ -136,85 +113,80 @@ namespace Orleans.Reminders.Redis
                 _logger.Debug("UpsertRow entry = {0}, etag = {1}", entry.ToString(), entry.ETag);
             }
 
-            RedisKey reminderKey = GetReminderKey(_clusterOptions.ServiceId, entry.GrainRef, entry.ReminderName);
-            RedisKey grainKey = GetGrainKey(_clusterOptions.ServiceId, entry.GrainRef);
-            string newEtag = Guid.NewGuid().ToString();
-            // Should we change it now?
-            entry.ETag = newEtag;
+            if (entry.ReminderName.IndexOf(':') != -1)
+            {
+                throw new ReminderException($"ReminderName should not contain ':' for Redis Reminder Provider");
+            }
 
-            ReminderData data = ReminderData.Create(entry);
-            string payload = JsonConvert.SerializeObject(data, _jsonSettings);
+            (string reminderId, string etag, RedisValue reminderValue) = ConvertFromEntry(entry);
+            string filter = $"{reminderId}:";
 
             ITransaction tx = _db.CreateTransaction();
-            HashEntry[] hashEntries = new HashEntry[] {
-                new HashEntry(ETagHashKey, newEtag),
-                new HashEntry(DataHashKey, payload)
-            };
-            tx.HashSetAsync(reminderKey, hashEntries).Ignore();
-            tx.HashSetAsync(grainKey, entry.ReminderName, payload).Ignore();
-            tx.SortedSetAddAsync(GrainHashIndexKey, payload, entry.GrainRef.GetUniformHashCode()).Ignore();
-
+            _db.SortedSetRemoveRangeByValueAsync(RemindersRedisKey, filter, filter + ((char)0xFF)).Ignore();
+            _db.SortedSetAddAsync(RemindersRedisKey, reminderValue, 0).Ignore();
             bool success = await tx.ExecuteAsync();
             if (success)
             {
-                return newEtag;
+                return etag;
             }
             else
             {
                 _logger.Warn(ErrorCode.ReminderServiceBase,
-                    $"Intermediate error updating entry {entry.ToString()} to Redis.");
+                    $"Intermediate error updating entry {entry} to Redis.");
                 throw new ReminderException("Failed to upsert reminder");
             }
         }
 
-        public static RedisKey GetReminderKey(string serviceId, GrainReference grainRef, string reminderName)
+        private static string GetReminderId(GrainReference grainRef, string reminderName)
         {
-            return $"{serviceId}_{grainRef.ToKeyString()}_{reminderName}";
+            uint grainHash = grainRef.GetUniformHashCode();
+            return $"{grainHash:X8}_{grainRef.ToKeyString()}_{reminderName}";
         }
 
-        public static RedisKey GetGrainKey(string serviceId, GrainReference grainRef)
+        private ReminderEntry ConvertToEntry(RedisValue reminderValue)
         {
-            return $"{serviceId}_{grainRef.ToKeyString()}";
+            string value = reminderValue.ToString();
+            string[] valueSegments = value.Split(new[] { ':' }, 3);
+            string reminderId = valueSegments[0];
+            string etag = valueSegments[1];
+            string payload = valueSegments[2];
+
+            string[] idSegments = reminderId.Split(new[] { '_' }, 3);
+            string grainRef = idSegments[1];
+            string reminderName = idSegments[2];
+
+            ReminderData data = JsonConvert.DeserializeObject<ReminderData>(payload);
+
+            return new ReminderEntry
+            {
+                GrainRef = _grainReferenceConverter.GetGrainFromKeyString(grainRef),
+                Period = data.Period,
+                ReminderName = reminderName,
+                StartAt = data.StartAt,
+                ETag = etag,
+            };
         }
 
-        public static RedisKey GetGrainHashIndexKey(string serviceId)
+        public (string reminderId, string eTag, RedisValue reminderValue) ConvertFromEntry(ReminderEntry entry)
         {
-            return $"{serviceId}_GrainHashIndex";
+            string reminderId = GetReminderId(entry.GrainRef, entry.ReminderName);
+
+            string eTag = Guid.NewGuid().ToString();
+
+            ReminderData data = new()
+            {
+                StartAt = entry.StartAt,
+                Period = entry.Period,
+            };
+            string payload = JsonConvert.SerializeObject(data, _jsonSettings);
+
+            return (reminderId, eTag, $"{reminderId}:{eTag}:{payload}");
         }
     }
 
     internal class ReminderData
     {
-        public string ETag { get; set; }
-        public string GrainReference { get; set; }
-        public string ReminderName { get; set; }
         public DateTime StartAt { get; set; }
         public TimeSpan Period { get; set; }
-
-        public static ReminderData Create(ReminderEntry entry)
-        {
-            ReminderData data = new ReminderData
-            {
-                ETag = entry.ETag,
-                GrainReference = entry.GrainRef.ToKeyString(),
-                ReminderName = entry.ReminderName,
-                StartAt = entry.StartAt,
-                Period = entry.Period
-            };
-            return data;
-        }
-
-        public ReminderEntry ToEntry(IGrainReferenceConverter grainReferenceConverter)
-        {
-            ReminderEntry entry = new ReminderEntry
-            {
-                ETag = ETag,
-                GrainRef = grainReferenceConverter.GetGrainFromKeyString(GrainReference),
-                Period = Period,
-                ReminderName = ReminderName,
-                StartAt = StartAt
-            };
-            return entry;
-        }
     }
 }

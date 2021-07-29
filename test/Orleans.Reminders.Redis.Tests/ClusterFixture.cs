@@ -16,7 +16,7 @@ namespace Orleans.Reminders.Redis.Tests
 
         public ClusterFixture()
         {
-            TestClusterBuilder builder = new TestClusterBuilder(1);
+            TestClusterBuilder builder = new(1);
             builder.Options.ServiceId = "Service";
             builder.Options.ClusterId = "TestCluster";
             builder.AddSiloBuilderConfigurator<SiloConfigurator>();
@@ -24,7 +24,6 @@ namespace Orleans.Reminders.Redis.Tests
             string redisHost = Environment.GetEnvironmentVariable("REDIS_HOST") ?? "127.0.0.1";
             string redisPort = Environment.GetEnvironmentVariable("REDIS_PORT") ?? "6379";
             string redisConnectionString = $"{redisHost}:{redisPort}, allowAdmin=true";
-            //string redisConnectionString = $"{Environment.GetEnvironmentVariable("REDIS_CONNSTR") ?? "localhost:6379"}, allowAdmin=true";
 
             builder.ConfigureHostConfiguration(config =>
             {

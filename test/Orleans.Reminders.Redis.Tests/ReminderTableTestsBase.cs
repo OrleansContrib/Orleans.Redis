@@ -23,18 +23,16 @@ namespace Orleans.Reminders.Redis.Tests
     {
         private readonly ILogger logger;
 
-        private readonly IReminderTable remindersTable;
+        protected readonly IReminderTable remindersTable;
         protected ClusterFixture clusterFixture;
         protected ILoggerFactory loggerFactory;
         protected IOptions<ClusterOptions> clusterOptions;
 
-        protected const string testDatabaseName = "OrleansReminderTest";//for relational storage
 
         protected ReminderTableTestsBase(ClusterFixture clusterFixture, LoggerFilterOptions filters)
         {
             this.clusterFixture = clusterFixture;
 
-            //fixture.InitializeConnectionStringAccessor(GetConnectionString);
             loggerFactory = TestingUtils.CreateDefaultLoggerFactory($"{GetType()}.log", filters);
             logger = loggerFactory.CreateLogger<ReminderTableTestsBase>();
             string serviceId = Guid.NewGuid().ToString();
@@ -58,14 +56,9 @@ namespace Orleans.Reminders.Redis.Tests
 
         protected abstract IReminderTable CreateRemindersTable();
 
-        protected virtual string GetAdoInvariant()
-        {
-            return null;
-        }
-
         protected async Task RemindersParallelUpsert()
         {
-            var upserts = await Task.WhenAll(Enumerable.Range(0, 5).Select(i =>
+            string[][] upserts = await Task.WhenAll(Enumerable.Range(0, 5).Select(i =>
             {
                 ReminderEntry reminder = CreateReminder(MakeTestGrainReference(), i.ToString());
                 return Task.WhenAll(Enumerable.Range(1, 5).Select(j =>
@@ -127,7 +120,7 @@ namespace Orleans.Reminders.Redis.Tests
 
             uint[] remindersHashes = rows.Reminders.Select(r => r.GrainRef.GetUniformHashCode()).ToArray();
 
-            SafeRandom random = new SafeRandom();
+            SafeRandom random = new();
 
             await Task.WhenAll(Enumerable.Range(0, iterations).Select(i =>
                 TestRemindersHashInterval(remindersTable, (uint)random.Next(), (uint)random.Next(),
@@ -142,14 +135,14 @@ namespace Orleans.Reminders.Redis.Tests
                 ? remindersHashes.Where(r => r > beginHash && r <= endHash)
                 : remindersHashes.Where(r => r > beginHash || r <= endHash);
 
-            HashSet<uint> expectedSet = new HashSet<uint>(expectedHashes);
+            HashSet<uint> expectedSet = new(expectedHashes);
             IEnumerable<uint> returnedHashes = (await rowsTask).Reminders.Select(r => r.GrainRef.GetUniformHashCode());
-            HashSet<uint> returnedSet = new HashSet<uint>(returnedHashes);
+            HashSet<uint> returnedSet = new(returnedHashes);
 
             Assert.True(returnedSet.SetEquals(expectedSet));
         }
 
-        private static ReminderEntry CreateReminder(GrainReference grainRef, string reminderName)
+        protected static ReminderEntry CreateReminder(GrainReference grainRef, string reminderName)
         {
             DateTime now = DateTime.UtcNow;
             now = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second);
@@ -162,9 +155,9 @@ namespace Orleans.Reminders.Redis.Tests
             };
         }
 
-        private GrainReference MakeTestGrainReference()
+        protected GrainReference MakeTestGrainReference()
         {
-            GrainReference grainRef = this.clusterFixture.Client.GetGrain<IReminderTestGrain>(Guid.NewGuid()).GetReference().Result;
+            GrainReference grainRef = clusterFixture.Client.GetGrain<IReminderTestGrain>(Guid.NewGuid()).GetReference().Result;
             return grainRef;
         }
     }
