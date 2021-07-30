@@ -52,7 +52,7 @@ namespace Orleans.Reminders.Redis
             _muxer = await _redisOptions.CreateMultiplexer(_redisOptions);
             _db = _redisOptions.DatabaseNumber.HasValue
                 ? _muxer.GetDatabase(_redisOptions.DatabaseNumber.Value)
-                : _muxer.GetDatabase(_redisOptions.DatabaseNumber.Value);
+                : _muxer.GetDatabase();
         }
 
         public async Task<ReminderEntry> ReadRow(GrainReference grainRef, string reminderName)
@@ -111,11 +111,6 @@ namespace Orleans.Reminders.Redis
             if (_logger.IsEnabled(LogLevel.Debug))
             {
                 _logger.Debug("UpsertRow entry = {0}, etag = {1}", entry.ToString(), entry.ETag);
-            }
-
-            if (entry.ReminderName.IndexOf(':') != -1)
-            {
-                throw new ReminderException($"ReminderName should not contain ':' for Redis Reminder Provider");
             }
 
             (string reminderId, string etag, RedisValue reminderValue) = ConvertFromEntry(entry);

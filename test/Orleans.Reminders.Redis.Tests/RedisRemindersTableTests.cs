@@ -5,8 +5,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-using Orleans.Configuration;
-using Orleans.Runtime;
 using Orleans.TestingHost;
 
 using Xunit;
@@ -29,9 +27,12 @@ namespace Orleans.Reminders.Redis.Tests
 
         protected override IReminderTable CreateRemindersTable()
         {
-            var reminderTable = ((InProcessSiloHandle)clusterFixture.Cluster.Primary).SiloHost.Services.GetService<IReminderTable>();
+            IReminderTable reminderTable = ((InProcessSiloHandle)clusterFixture.Cluster.Primary).SiloHost.Services.GetService<IReminderTable>();
             if (reminderTable is not RedisReminderTable)
+            {
                 throw new InvalidOperationException("RedisReminderTable not configured");
+            }
+
             return reminderTable;
         }
 
@@ -58,11 +59,20 @@ namespace Orleans.Reminders.Redis.Tests
             await ReminderSimple();
         }
 
-        [Fact]
-        public void UpsertRowShouldThrowWhenReminderNameInvalid()
+        [Theory]
+        [InlineData("aa:bb")]
+        [InlineData("aa_bb")]
+        public async Task ReminderWithSpecialName(string reminderName)
         {
-            ReminderEntry reminder = CreateReminder(MakeTestGrainReference(), "aa:bb");
-            Assert.ThrowsAsync<ReminderException>(() => remindersTable.UpsertRow(reminder));
+            await ReminderSimple(MakeTestGrainReference(), reminderName);
+        }
+
+        [Theory]
+        [InlineData("aa:bb")]
+        [InlineData("aa_bb")]
+        public async Task ReminderWithSpecialGrainId(string grainId)
+        {
+            await ReminderSimple(MakeTestGrainReference(grainId), "0");
         }
     }
 }

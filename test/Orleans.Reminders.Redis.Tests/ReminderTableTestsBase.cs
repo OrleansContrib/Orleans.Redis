@@ -74,7 +74,12 @@ namespace Orleans.Reminders.Redis.Tests
 
         protected async Task ReminderSimple()
         {
-            ReminderEntry reminder = CreateReminder(MakeTestGrainReference(), "0");
+            await ReminderSimple(MakeTestGrainReference(), "0");
+        }
+
+        protected async Task ReminderSimple(GrainReference grainRef, string reminderName)
+        {
+            ReminderEntry reminder = CreateReminder(grainRef, reminderName);
             await remindersTable.UpsertRow(reminder);
 
             ReminderEntry readReminder = await remindersTable.ReadRow(reminder.GrainRef, reminder.ReminderName);
@@ -157,7 +162,11 @@ namespace Orleans.Reminders.Redis.Tests
 
         protected GrainReference MakeTestGrainReference()
         {
-            GrainReference grainRef = clusterFixture.Client.GetGrain<IReminderTestGrain>(Guid.NewGuid()).GetReference().Result;
+            return MakeTestGrainReference(Guid.NewGuid().ToString());
+        }
+        protected GrainReference MakeTestGrainReference(string grainId)
+        {
+            GrainReference grainRef = clusterFixture.Client.GetGrain<IReminderTestGrain>(grainId).GetReference().Result;
             return grainRef;
         }
     }
