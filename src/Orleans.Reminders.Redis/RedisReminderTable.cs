@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -57,36 +58,34 @@ namespace Orleans.Reminders.Redis
 
         public async Task<ReminderEntry> ReadRow(GrainReference grainRef, string reminderName)
         {
-            // fetch reminder by reminder id
-            string filter = $"{GetReminderId(grainRef, reminderName)}:";
-            RedisValue[] values = await _db.SortedSetRangeByValueAsync(RemindersRedisKey, filter, filter + ((char)0xFF));
-            // if we need to check there should be only single values?
+            (string from, string to) = GetFilter(grainRef, reminderName);
+            RedisValue[] values = await _db.SortedSetRangeByValueAsync(RemindersRedisKey, from, to);
             return ConvertToEntry(values.Single());
         }
 
         public async Task<ReminderTableData> ReadRows(GrainReference key)
         {
-            string filter = $"{key.GetUniformHashCode():X8}_{key.ToKeyString()}_";
-            RedisValue[] values = await _db.SortedSetRangeByValueAsync(RemindersRedisKey, filter, filter + ((char)0xFF));
+            (string from, string to) = GetFilter(key);
+            RedisValue[] values = await _db.SortedSetRangeByValueAsync(RemindersRedisKey, from, to);
             IEnumerable<ReminderEntry> records = values.Select(v => ConvertToEntry(v));
             return new ReminderTableData(records);
         }
 
         public async Task<ReminderTableData> ReadRows(uint begin, uint end)
         {
-            RedisValue filterBegin = $"{begin:X8}_";
-            RedisValue filterEnd = $"{end:X8}" + (char)('_' + 1);
+            (string _, string from) = GetFilter(begin);
+            (string _, string to) = GetFilter(end);
             IEnumerable<RedisValue> values;
             if (begin < end)
             {
                 // -----begin******end-----
-                values = await _db.SortedSetRangeByValueAsync(RemindersRedisKey, filterBegin, filterEnd);
+                values = await _db.SortedSetRangeByValueAsync(RemindersRedisKey, from, to);
             }
             else
             {
                 // *****end------begin*****
-                RedisValue[] values1 = await _db.SortedSetRangeByValueAsync(RemindersRedisKey, filterBegin, "FFFFFFFF" + ((char)0xFF));
-                RedisValue[] values2 = await _db.SortedSetRangeByValueAsync(RemindersRedisKey, "00000000_", filterEnd);
+                RedisValue[] values1 = await _db.SortedSetRangeByValueAsync(RemindersRedisKey, from, "[\"FFFFFFFF\",#");
+                RedisValue[] values2 = await _db.SortedSetRangeByValueAsync(RemindersRedisKey, "[\"00000000\",\"", to);
                 values = values1.Concat(values2);
             }
 
@@ -96,8 +95,8 @@ namespace Orleans.Reminders.Redis
 
         public async Task<bool> RemoveRow(GrainReference grainRef, string reminderName, string eTag)
         {
-            string filter = $"{GetReminderId(grainRef, reminderName)}:{eTag}:";
-            long removed = await _db.SortedSetRemoveRangeByValueAsync(RemindersRedisKey, filter, filter + ((char)0xFF));
+            (RedisValue from, RedisValue to) = GetFilter(grainRef, reminderName, eTag);
+            long removed = await _db.SortedSetRemoveRangeByValueAsync(RemindersRedisKey, from, to);
             return removed > 0;
         }
 
@@ -113,12 +112,12 @@ namespace Orleans.Reminders.Redis
                 _logger.Debug("UpsertRow entry = {0}, etag = {1}", entry.ToString(), entry.ETag);
             }
 
-            (string reminderId, string etag, RedisValue reminderValue) = ConvertFromEntry(entry);
-            string filter = $"{reminderId}:";
+            (string etag, string value) = ConvertFromEntry(entry);
+            (string from, string to) = GetFilter(entry.GrainRef, entry.ReminderName);
 
             ITransaction tx = _db.CreateTransaction();
-            _db.SortedSetRemoveRangeByValueAsync(RemindersRedisKey, filter, filter + ((char)0xFF)).Ignore();
-            _db.SortedSetAddAsync(RemindersRedisKey, reminderValue, 0).Ignore();
+            _db.SortedSetRemoveRangeByValueAsync(RemindersRedisKey, from, to).Ignore();
+            _db.SortedSetAddAsync(RemindersRedisKey, value, 0).Ignore();
             bool success = await tx.ExecuteAsync();
             if (success)
             {
@@ -132,56 +131,65 @@ namespace Orleans.Reminders.Redis
             }
         }
 
-        private static string GetReminderId(GrainReference grainRef, string reminderName)
+        private ReminderEntry ConvertToEntry(string reminderValue)
         {
-            uint grainHash = grainRef.GetUniformHashCode();
-            return $"{grainHash:X8}_{grainRef.ToKeyString()}_{reminderName}";
-        }
-
-        private ReminderEntry ConvertToEntry(RedisValue reminderValue)
-        {
-            string value = reminderValue.ToString();
-            string[] valueSegments = value.Split(new[] { ':' }, 3);
-            string reminderId = valueSegments[0];
-            string etag = valueSegments[1];
-            string payload = valueSegments[2];
-
-            string[] idSegments = reminderId.Split(new[] { '_' }, 3);
-            string grainRef = idSegments[1];
-            string reminderName = idSegments[2];
-
-            ReminderData data = JsonConvert.DeserializeObject<ReminderData>(payload);
+            string[] segments = JsonConvert.DeserializeObject<string[]>(reminderValue);
 
             return new ReminderEntry
             {
-                GrainRef = _grainReferenceConverter.GetGrainFromKeyString(grainRef),
-                Period = data.Period,
-                ReminderName = reminderName,
-                StartAt = data.StartAt,
-                ETag = etag,
+                GrainRef = _grainReferenceConverter.GetGrainFromKeyString(segments[1]),
+                ReminderName = segments[2],
+                ETag = segments[3],
+                StartAt = DateTime.Parse(segments[4], null, DateTimeStyles.RoundtripKind),
+                Period = TimeSpan.Parse(segments[5]),
             };
         }
 
-        public (string reminderId, string eTag, RedisValue reminderValue) ConvertFromEntry(ReminderEntry entry)
+        private (string from, string to) GetFilter(uint grainHash)
         {
-            string reminderId = GetReminderId(entry.GrainRef, entry.ReminderName);
-
-            string eTag = Guid.NewGuid().ToString();
-
-            ReminderData data = new()
-            {
-                StartAt = entry.StartAt,
-                Period = entry.Period,
-            };
-            string payload = JsonConvert.SerializeObject(data, _jsonSettings);
-
-            return (reminderId, eTag, $"{reminderId}:{eTag}:{payload}");
+            return GetFilter(grainHash.ToString("X8"));
         }
-    }
 
-    internal class ReminderData
-    {
-        public DateTime StartAt { get; set; }
-        public TimeSpan Period { get; set; }
+        private (string from, string to) GetFilter(GrainReference grainRef)
+        {
+            return GetFilter(grainRef.GetUniformHashCode().ToString("X8"), grainRef.ToKeyString());
+        }
+
+        private (string from, string to) GetFilter(GrainReference grainRef, string reminderName)
+        {
+            return GetFilter(grainRef.GetUniformHashCode().ToString("X8"), grainRef.ToKeyString(), reminderName);
+        }
+
+        private (string from, string to) GetFilter(GrainReference grainRef, string reminderName, string eTag)
+        {
+            return GetFilter(grainRef.GetUniformHashCode().ToString("X8"), grainRef.ToKeyString(), reminderName, eTag);
+        }
+
+        private (string from, string to) GetFilter(params string[] segments)
+        {
+            string prefix = JsonConvert.SerializeObject(segments, _jsonSettings);
+            prefix = prefix.Remove(prefix.Length - 1);
+            string from = prefix + ",\"";
+            string to = prefix + ",#";
+            return (from, to);
+        }
+
+
+        private (string eTag, string value) ConvertFromEntry(ReminderEntry entry)
+        {
+            string grainHash = entry.GrainRef.GetUniformHashCode().ToString("X8");
+            string eTag = Guid.NewGuid().ToString();
+            string[] segments = new string[]
+            {
+                grainHash,
+                entry.GrainRef.ToKeyString(),
+                entry.ReminderName,
+                eTag,
+                entry.StartAt.ToString("O"),
+                entry.Period.ToString()
+            };
+
+            return (eTag, JsonConvert.SerializeObject(segments, _jsonSettings));
+        }
     }
 }
