@@ -26,7 +26,7 @@ namespace Orleans.Reminders.Redis
         private IConnectionMultiplexer _muxer;
         private IDatabase _db;
 
-        private readonly JsonSerializerSettings _jsonSettings = new()
+        private readonly JsonSerializerSettings _jsonSettings = new JsonSerializerSettings()
         {
             DateFormatHandling = DateFormatHandling.IsoDateFormat,
             DefaultValueHandling = DefaultValueHandling.Ignore,
@@ -60,7 +60,14 @@ namespace Orleans.Reminders.Redis
         {
             (string from, string to) = GetFilter(grainRef, reminderName);
             RedisValue[] values = await _db.SortedSetRangeByValueAsync(RemindersRedisKey, from, to);
-            return ConvertToEntry(values.Single());
+            if (values.Length == 0)
+            {
+                return null;
+            }
+            else
+            {
+                return ConvertToEntry(values.SingleOrDefault());
+            }
         }
 
         public async Task<ReminderTableData> ReadRows(GrainReference key)

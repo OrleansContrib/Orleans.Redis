@@ -20,15 +20,15 @@ namespace Orleans.Reminders.Redis.Tests
 
         private static LoggerFilterOptions CreateFilters()
         {
-            LoggerFilterOptions filters = new();
+            LoggerFilterOptions filters = new LoggerFilterOptions();
             filters.AddFilter(nameof(RedisRemindersTableTests), LogLevel.Trace);
             return filters;
         }
 
         protected override IReminderTable CreateRemindersTable()
         {
-            IReminderTable reminderTable = ((InProcessSiloHandle)clusterFixture.Cluster.Primary).SiloHost.Services.GetService<IReminderTable>();
-            if (reminderTable is not RedisReminderTable)
+            RedisReminderTable reminderTable = ((InProcessSiloHandle)clusterFixture.Cluster.Primary).SiloHost.Services.GetService<IReminderTable>() as RedisReminderTable;
+            if (reminderTable == null)
             {
                 throw new InvalidOperationException("RedisReminderTable not configured");
             }
@@ -73,6 +73,13 @@ namespace Orleans.Reminders.Redis.Tests
         public async Task ReminderWithSpecialGrainId(string grainId)
         {
             await ReminderSimple(MakeTestGrainReference(grainId), "0");
+        }
+
+        [Fact]
+        public async Task ReadNonExistentReminder()
+        {
+            ReminderEntry reminder = await remindersTable.ReadRow(MakeTestGrainReference(), "ThereIsNoReminder");
+            Assert.Null(reminder);
         }
     }
 }

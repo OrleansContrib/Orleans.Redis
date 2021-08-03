@@ -48,10 +48,6 @@ namespace Orleans.Reminders.Redis.Tests
 
         public virtual void Dispose()
         {
-            //if (remindersTable != null && SiloInstanceTableTestConstants.DeleteEntriesAfterTest)
-            //{
-            //    remindersTable.TestOnlyClearTable().Wait();
-            //}
         }
 
         protected abstract IReminderTable CreateRemindersTable();
@@ -125,7 +121,7 @@ namespace Orleans.Reminders.Redis.Tests
 
             uint[] remindersHashes = rows.Reminders.Select(r => r.GrainRef.GetUniformHashCode()).ToArray();
 
-            SafeRandom random = new();
+            SafeRandom random = new SafeRandom();
 
             await Task.WhenAll(Enumerable.Range(0, iterations).Select(i =>
                 TestRemindersHashInterval(remindersTable, (uint)random.Next(), (uint)random.Next(),
@@ -140,9 +136,9 @@ namespace Orleans.Reminders.Redis.Tests
                 ? remindersHashes.Where(r => r > beginHash && r <= endHash)
                 : remindersHashes.Where(r => r > beginHash || r <= endHash);
 
-            HashSet<uint> expectedSet = new(expectedHashes);
+            HashSet<uint> expectedSet = new HashSet<uint>(expectedHashes);
             IEnumerable<uint> returnedHashes = (await rowsTask).Reminders.Select(r => r.GrainRef.GetUniformHashCode());
-            HashSet<uint> returnedSet = new(returnedHashes);
+            HashSet<uint> returnedSet = new HashSet<uint>(returnedHashes);
 
             Assert.True(returnedSet.SetEquals(expectedSet));
         }

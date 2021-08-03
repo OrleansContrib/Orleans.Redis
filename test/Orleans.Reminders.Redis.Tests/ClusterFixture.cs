@@ -16,7 +16,7 @@ namespace Orleans.Reminders.Redis.Tests
 
         public ClusterFixture()
         {
-            TestClusterBuilder builder = new(1);
+            TestClusterBuilder builder = new TestClusterBuilder(1);
             builder.Options.ServiceId = "Service";
             builder.Options.ClusterId = "TestCluster";
             builder.AddSiloBuilderConfigurator<SiloConfigurator>();
