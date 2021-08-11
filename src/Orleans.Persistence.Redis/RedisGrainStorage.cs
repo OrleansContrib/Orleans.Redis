@@ -5,12 +5,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using Orleans.Configuration;
+using Orleans.Persistence.Redis;
+using Orleans.Persistence.Redis.Serialization;
 using Orleans.Runtime;
-using Orleans.Serialization;
 using StackExchange.Redis;
 using Orleans.Storage;
+using static System.FormattableString;
 
 namespace Orleans.Persistence
 {
@@ -19,22 +20,14 @@ namespace Orleans.Persistence
     /// </summary>
     public class RedisGrainStorage : IGrainStorage, ILifecycleParticipant<ISiloLifecycle>
     {
-        private const string _writeScript = "local etag = redis.call('HGET', KEYS[1], 'etag')\nif etag == false or etag == ARGV[1] then return redis.call('HMSET', KEYS[1], 'etag', ARGV[2], 'data', ARGV[3]) else return false end";
+        private const string WriteScript = "local etag = redis.call('HGET', KEYS[1], 'etag')\nif etag == false or etag == ARGV[1] then return redis.call('HMSET', KEYS[1], 'etag', ARGV[2], 'data', ARGV[3]) else return false end";
+
         private readonly string _serviceId;
         private readonly string _name;
-        private readonly SerializationManager _serializationManager;
         private readonly ILogger _logger;
         private readonly RedisStorageOptions _options;
-        private readonly JsonSerializerSettings _jsonSettings = new JsonSerializerSettings()
-        {
-            TypeNameHandling = TypeNameHandling.All,
-            PreserveReferencesHandling = PreserveReferencesHandling.Objects,
-            DateFormatHandling = DateFormatHandling.IsoDateFormat,
-            DefaultValueHandling = DefaultValueHandling.Ignore,
-            MissingMemberHandling = MissingMemberHandling.Ignore,
-            NullValueHandling = NullValueHandling.Ignore,
-            ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
-        };
+        private readonly IRedisDataSerializer _serializer;
+
         private ConnectionMultiplexer _connection;
         private IDatabase _db;
         private ConfigurationOptions _redisOptions;
@@ -47,14 +40,15 @@ namespace Orleans.Persistence
         public RedisGrainStorage(
             string name,
             RedisStorageOptions options,
-            SerializationManager serializationManager,
+            IRedisDataSerializer serializer,
             IOptions<ClusterOptions> clusterOptions,
             ILogger<RedisGrainStorage> logger)
         {
             _name = name;
             _logger = logger;
             _options = options;
-            _serializationManager = serializationManager;
+            _serializer = serializer;
+
             _serviceId = clusterOptions.Value.ServiceId;
         }
 
@@ -65,8 +59,7 @@ namespace Orleans.Persistence
             lifecycle.Subscribe(name, _options.InitStage, Init, Close);
         }
 
-        /// <inheritdoc />
-        public async Task Init(CancellationToken cancellationToken)
+        private async Task Init(CancellationToken cancellationToken)
         {
             var timer = Stopwatch.StartNew();
 
@@ -91,7 +84,7 @@ namespace Orleans.Persistence
                     _db = _connection.GetDatabase();
                 }
 
-                _preparedWriteScript = LuaScript.Prepare(_writeScript);
+                _preparedWriteScript = LuaScript.Prepare(WriteScript);
 
                 var loadTasks = new Task<LoadedLuaScript>[_redisOptions.EndPoints.Count];
                 for (int i = 0; i < _redisOptions.EndPoints.Count; i++)
@@ -132,14 +125,8 @@ namespace Orleans.Persistence
                 {
                     var etagEntry = hashEntries.Single(e => e.Name == "etag");
                     var valueEntry = hashEntries.Single(e => e.Name == "data");
-                    if (_options.UseJson)
-                    {
-                        grainState.State = JsonConvert.DeserializeObject(valueEntry.Value, grainState.State.GetType(), _jsonSettings);
-                    }
-                    else
-                    {
-                        grainState.State = _serializationManager.DeserializeFromByteArray<object>(valueEntry.Value);
-                    }
+
+                    grainState.State = _serializer.DeserializeObject(grainState.State.GetType(), valueEntry.Value);
 
                     grainState.ETag = etagEntry.Value;
                 }
@@ -150,19 +137,59 @@ namespace Orleans.Persistence
             }
             catch (RedisServerException)
             {
-                var stringValue = await _db.StringGetAsync(key);
-                if (stringValue.HasValue)
+                _logger.LogInformation("Encountered old format grain state for grain of type {grainType} if ID: {grainReference} when reading hash state for key {key}. Attempting to migrate.",
+                    grainType,
+                    grainReference,
+                    key);
+                // This is here for backwards compatibility where an earlier version stored only the data as a simple key without the etag.
+                // So get the data from the key and deserialize.
+                var simpleKeyValue = await _db.StringGetAsync(key).ConfigureAwait(false);
+                if (simpleKeyValue.HasValue)
                 {
-                    if (_options.UseJson)
-                    {
-                        grainState.State = JsonConvert.DeserializeObject(stringValue, grainState.State.GetType(), _jsonSettings);
-                    }
-                    else
-                    {
-                        grainState.State = _serializationManager.DeserializeFromByteArray<object>(stringValue);
-                    }
+                    grainState.State = _serializer.DeserializeObject(grainState.State.GetType(), simpleKeyValue);
                 }
+                
+                // ETag does not exist in the storage so create a new one.
                 grainState.ETag = Guid.NewGuid().ToString();
+                
+                // To allow WriteStateAsync to operate at all in these cases the original simple key must be deleted and a hash must be created in its place with the etag that was just assigned.
+                // The original key must be deleted first because a hash cannot overwrite a simple key.
+                // This will create a situation where if the delete succeeds and the HashSet fails the storage does not have the data before the grain state is again written.
+                try
+                {
+                    await _db.KeyDeleteAsync(key).ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogWarning(e, "Could not delete old grain state for grain of type {grainType} with ID: {grainReference} with key {key} while migrating new new structure. Will be retried on next read or write.", 
+                        grainType,
+                        grainReference,
+                        key);
+                    return;
+                }
+
+                try
+                {
+                    await _db.HashSetAsync(key, new[] {new HashEntry("etag", grainState.ETag), new HashEntry("data", simpleKeyValue)}).ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(e,
+                        "Could add hash state for grain of type {grainType} with ID: {grainReference} after deleting old state with {key} while migrating to new structure. Will be retried on next write.",
+                        grainType,
+                        grainReference,
+                        key);
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(
+                    "Failed to read grain state for {grainType} grain with ID: {grainReference} with redis key {key}.",
+                    grainType, grainReference, key);
+                throw new RedisStorageException(
+                    Invariant(
+                        $"Failed to read grain state for {grainType} grain with ID: {grainReference} with redis key {key}."),
+                    e);
             }
         }
 
@@ -173,19 +200,55 @@ namespace Orleans.Persistence
             var newEtag = Guid.NewGuid().ToString();
 
             RedisResult response;
-            if (_options.UseJson)
+            try
             {
-                var payload = JsonConvert.SerializeObject(grainState.State, _jsonSettings);
-                var args = new RedisValue[] { grainState.ETag ?? "null", newEtag, payload };
-                response = await _db.ScriptEvaluateAsync(_preparedWriteScriptHash, new RedisKey[] { key }, args);
+                response = await WriteToRedisAsync(grainState.State, grainState.ETag ?? "null", key, newEtag)
+                    .ConfigureAwait(false);
             }
-            else
+            catch (RedisServerException)
             {
-                var payload = _serializationManager.SerializeToByteArray(grainState.State);
-                var args = new RedisValue[] { grainState.ETag ?? "null", newEtag, payload };
-                response = await _db.ScriptEvaluateAsync(_preparedWriteScriptHash, new RedisKey[] { key }, args);
-            }
+                _logger.LogInformation(
+                    "Encountered old format grain state when write hash state for key {key}. Attempting to migrate.",
+                    key);
+                try
+                {
+                    await _db.KeyDeleteAsync(key).ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(e,
+                        "Could not delete old grain state with key {key} while migrating new new structure.", key);
+                    throw new RedisStorageException(Invariant(
+                        $"Could not delete old grain state with key {key} while migrating new new structure."));
+                }
 
+                try
+                {
+                    response = await WriteToRedisAsync(grainState.State, grainState.ETag ?? "null", key, newEtag)
+                        .ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(
+                        "Failed to write grain state for {grainType} grain with ID: {grainReference} with redis key {key} while migrating to new structure.",
+                        grainType, grainReference, key);
+                    throw new RedisStorageException(
+                        Invariant(
+                            $"Failed to write grain state for {grainType} grain with ID: {grainReference} with redis key {key} while migrating to new structure."),
+                        e);
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(
+                    "Failed to write grain state for {grainType} grain with ID: {grainReference} with redis key {key}.",
+                    grainType, grainReference, key);
+                throw new RedisStorageException(
+                    Invariant(
+                        $"Failed to write grain state for {grainType} grain with ID: {grainReference} with redis key {key}."),
+                    e);
+            }
+            
             if (response.IsNull)
             {
                 throw new InconsistentStateException($"ETag mismatch - tried with ETag: {grainState.ETag}");
@@ -194,17 +257,24 @@ namespace Orleans.Persistence
             grainState.ETag = newEtag;
         }
 
+        private async Task<RedisResult> WriteToRedisAsync(object state, string etag, string key, string newEtag)
+        {
+            var payload = _serializer.SerializeObject(state);
+
+            var args = new RedisValue[] { etag, newEtag, payload };
+            return await _db.ScriptEvaluateAsync(_preparedWriteScriptHash, new RedisKey[] { key }, args).ConfigureAwait(false);
+        }
+
         /// <inheritdoc />
         public async Task ClearStateAsync(string grainType, GrainReference grainReference, IGrainState grainState)
         {
             var key = GetKey(grainReference);
-            await _db.KeyDeleteAsync(key);
+            await _db.KeyDeleteAsync(key).ConfigureAwait(false);
         }
 
         private string GetKey(GrainReference grainReference)
         {
-            var format = _options.UseJson ? "json" : "binary";
-            return $"{grainReference.ToKeyString()}|{format}";
+            return $"{grainReference.ToKeyString()}|{_serializer.FormatSpecifier}";
         }
 
         private async Task Close(CancellationToken cancellationToken)
@@ -214,7 +284,7 @@ namespace Orleans.Persistence
                 return;
             }
 
-            await _connection.CloseAsync();
+            await _connection.CloseAsync().ConfigureAwait(false);
             _connection.Dispose();
         }
     }

@@ -151,8 +151,82 @@ namespace Orleans.Persistence.Redis.Tests
             Assert.Equal(state.DateTimeValue, result.Item3);
             Assert.Equal(state.GuidValue, result.Item4);
             Assert.Equal(state.GrainValue.GetPrimaryKeyLong(), result.Item5.GetPrimaryKeyLong());
+
+            // Verify that state can be written after migration
+            var newString = "New string value";
+            var newNow = DateTime.UtcNow;
+            var newGuid = Guid.NewGuid();
+            var newInt = 54321;
+            var newGrain = _cluster.GrainFactory.GetGrain<IJsonTestGrain>(2222);
+            await grain.Set(newString, newInt, newNow, newGuid, newGrain);
+            
+            var resultAfterWrite = await grain.Get();
+            Assert.Equal(newString, resultAfterWrite.Item1);
+            Assert.Equal(newInt, resultAfterWrite.Item2);
+            Assert.Equal(newNow, resultAfterWrite.Item3);
+            Assert.Equal(newGuid, resultAfterWrite.Item4);
+            Assert.Equal(newGrain.GetPrimaryKeyLong(), resultAfterWrite.Item5.GetPrimaryKeyLong());
         }
 
+        [Fact]
+        public async Task Json_BackwardsCompatible_MigrationFailsAtRead_MigrationAttemptedAtWrite()
+        {
+            var jsonSettings = new JsonSerializerSettings()
+            {
+                TypeNameHandling = TypeNameHandling.All,
+                PreserveReferencesHandling = PreserveReferencesHandling.Objects,
+                DateFormatHandling = DateFormatHandling.IsoDateFormat,
+                DefaultValueHandling = DefaultValueHandling.Ignore,
+                MissingMemberHandling = MissingMemberHandling.Ignore,
+                NullValueHandling = NullValueHandling.Ignore,
+                ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
+            };
+            var now = DateTime.UtcNow;
+            var guid = Guid.NewGuid();
+            var state = new JsonTestGrainState
+            {
+                StringValue = "string value",
+                DateTimeValue = now,
+                GuidValue = guid,
+                IntValue = 12345,
+                GrainValue = _cluster.GrainFactory.GetGrain<IJsonTestGrain>(2222)
+            };
+            var testState = JsonConvert.SerializeObject(state, jsonSettings);
+
+            var grain = _cluster.GrainFactory.GetGrain<IJsonTestGrain>(12345999);
+            var grainRef = await grain.GetReference();
+            var key = $"{grainRef.ToKeyString()}|json";
+            await _fixture.Database.StringSetAsync(key, testState);
+            
+            var result = await grain.Get();
+            Assert.Equal(state.StringValue, result.Item1);
+            Assert.Equal(state.IntValue, result.Item2);
+            Assert.Equal(state.DateTimeValue, result.Item3);
+            Assert.Equal(state.GuidValue, result.Item4);
+            Assert.Equal(state.GrainValue.GetPrimaryKeyLong(), result.Item5.GetPrimaryKeyLong());
+
+            // Ugly hack to reset the state to the old format
+            // First delete the hash that was created in the read.
+            await _fixture.Database.KeyDeleteAsync(key);
+            // Revert key to a simple key value
+            await _fixture.Database.StringSetAsync(key, testState);
+            
+            // Verify that state can be written
+            var newString = "New string value";
+            var newNow = DateTime.UtcNow;
+            var newGuid = Guid.NewGuid();
+            var newInt = 54321;
+            var newGrain = _cluster.GrainFactory.GetGrain<IJsonTestGrain>(2222);
+            await grain.Set(newString, newInt, newNow, newGuid, newGrain);
+            
+            var resultAfterWrite = await grain.Get();
+            Assert.Equal(newString, resultAfterWrite.Item1);
+            Assert.Equal(newInt, resultAfterWrite.Item2);
+            Assert.Equal(newNow, resultAfterWrite.Item3);
+            Assert.Equal(newGuid, resultAfterWrite.Item4);
+            Assert.Equal(newGrain.GetPrimaryKeyLong(), resultAfterWrite.Item5.GetPrimaryKeyLong());
+        }
+        
         [Fact]
         public async Task Json_Double_Activation_ETag_Conflict_Simulation()
         {
