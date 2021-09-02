@@ -137,10 +137,11 @@ namespace Orleans.Persistence
             }
             catch (RedisServerException)
             {
-                _logger.LogInformation("Encountered old format grain state for grain of type {grainType} if ID: {grainReference} when reading hash state for key {key}. Attempting to migrate.",
+                _logger.LogInformation("Encountered old format grain state for grain of type {GrainType} with id {GrainReference} when reading hash state for key {Key}. Attempting to migrate.",
                     grainType,
                     grainReference,
                     key);
+
                 // This is here for backwards compatibility where an earlier version stored only the data as a simple key without the etag.
                 // So get the data from the key and deserialize.
                 var simpleKeyValue = await _db.StringGetAsync(key).ConfigureAwait(false);
@@ -148,34 +149,21 @@ namespace Orleans.Persistence
                 {
                     grainState.State = _serializer.DeserializeObject(grainState.State.GetType(), simpleKeyValue);
                 }
-                
+
+                var tx = _db.CreateTransaction();
+
                 // ETag does not exist in the storage so create a new one.
                 grainState.ETag = Guid.NewGuid().ToString();
                 
                 // To allow WriteStateAsync to operate at all in these cases the original simple key must be deleted and a hash must be created in its place with the etag that was just assigned.
                 // The original key must be deleted first because a hash cannot overwrite a simple key.
                 // This will create a situation where if the delete succeeds and the HashSet fails the storage does not have the data before the grain state is again written.
-                try
+                _ = tx.KeyDeleteAsync(key);
+                _ = tx.HashSetAsync(key, new[] { new HashEntry("etag", grainState.ETag), new HashEntry("data", simpleKeyValue) });
+                if (!await tx.ExecuteAsync().ConfigureAwait(false))
                 {
-                    await _db.KeyDeleteAsync(key).ConfigureAwait(false);
-                }
-                catch (Exception e)
-                {
-                    _logger.LogWarning(e, "Could not delete old grain state for grain of type {grainType} with ID: {grainReference} with key {key} while migrating new new structure. Will be retried on next read or write.", 
-                        grainType,
-                        grainReference,
-                        key);
-                    return;
-                }
-
-                try
-                {
-                    await _db.HashSetAsync(key, new[] {new HashEntry("etag", grainState.ETag), new HashEntry("data", simpleKeyValue)}).ConfigureAwait(false);
-                }
-                catch (Exception e)
-                {
-                    _logger.LogError(e,
-                        "Could add hash state for grain of type {grainType} with ID: {grainReference} after deleting old state with {key} while migrating to new structure. Will be retried on next write.",
+                    _logger.LogError(
+                        "Unexpected error while migrating grain state to new storage for grain of type {GrainType} with id {GrainId} and storage key {Key}. Will retry on next operation.",
                         grainType,
                         grainReference,
                         key);
@@ -184,12 +172,9 @@ namespace Orleans.Persistence
             catch (Exception e)
             {
                 _logger.LogError(
-                    "Failed to read grain state for {grainType} grain with ID: {grainReference} with redis key {key}.",
+                    "Failed to read grain state for {GrainType} grain with id {GrainReference} and storage key {Key}.",
                     grainType, grainReference, key);
-                throw new RedisStorageException(
-                    Invariant(
-                        $"Failed to read grain state for {grainType} grain with ID: {grainReference} with redis key {key}."),
-                    e);
+                throw new RedisStorageException(Invariant($"Failed to read grain state for {grainType} grain with id {grainReference} and storage key {key}."), e);
             }
         }
 
@@ -202,41 +187,31 @@ namespace Orleans.Persistence
             RedisResult response;
             try
             {
-                response = await WriteToRedisAsync(grainState.State, grainState.ETag ?? "null", key, newEtag)
+                response = await WriteToRedisAsync(_db, grainState.State, grainState.ETag ?? "null", key, newEtag)
                     .ConfigureAwait(false);
             }
             catch (RedisServerException)
             {
-                _logger.LogInformation(
-                    "Encountered old format grain state when write hash state for key {key}. Attempting to migrate.",
+                _logger.LogInformation("Encountered old format grain state for grain of type {GrainType} with id {GrainReference} when writing hash state for key {Key}. Attempting to migrate.",
+                    grainType,
+                    grainReference,
                     key);
-                try
-                {
-                    await _db.KeyDeleteAsync(key).ConfigureAwait(false);
-                }
-                catch (Exception e)
-                {
-                    _logger.LogError(e,
-                        "Could not delete old grain state with key {key} while migrating new new structure.", key);
-                    throw new RedisStorageException(Invariant(
-                        $"Could not delete old grain state with key {key} while migrating new new structure."));
-                }
 
-                try
-                {
-                    response = await WriteToRedisAsync(grainState.State, grainState.ETag ?? "null", key, newEtag)
-                        .ConfigureAwait(false);
-                }
-                catch (Exception e)
+                var tx = _db.CreateTransaction();
+                _ = tx.KeyDeleteAsync(key);
+                var writeTask = WriteToRedisAsync(tx, grainState.State, grainState.ETag ?? "null", key, newEtag).ConfigureAwait(false);
+
+                if (!await tx.ExecuteAsync())
                 {
                     _logger.LogError(
-                        "Failed to write grain state for {grainType} grain with ID: {grainReference} with redis key {key} while migrating to new structure.",
-                        grainType, grainReference, key);
-                    throw new RedisStorageException(
-                        Invariant(
-                            $"Failed to write grain state for {grainType} grain with ID: {grainReference} with redis key {key} while migrating to new structure."),
-                        e);
+                        "Failed to write grain state for {GrainType} grain with id {GrainReference} with storage key {Key} while migrating to new structure",
+                        grainType,
+                        grainReference,
+                        key);
+                    throw new RedisStorageException(Invariant($"Failed to write grain state for {grainType} grain with id {grainReference} with storage key {key} while migrating to new structure"));
                 }
+
+                response = await writeTask;
             }
             catch (Exception e)
             {
@@ -248,7 +223,7 @@ namespace Orleans.Persistence
                         $"Failed to write grain state for {grainType} grain with ID: {grainReference} with redis key {key}."),
                     e);
             }
-            
+
             if (response.IsNull)
             {
                 throw new InconsistentStateException($"ETag mismatch - tried with ETag: {grainState.ETag}");
@@ -257,12 +232,12 @@ namespace Orleans.Persistence
             grainState.ETag = newEtag;
         }
 
-        private async Task<RedisResult> WriteToRedisAsync(object state, string etag, string key, string newEtag)
+        private async Task<RedisResult> WriteToRedisAsync(IDatabaseAsync db, object state, string etag, string key, string newEtag)
         {
             var payload = _serializer.SerializeObject(state);
 
             var args = new RedisValue[] { etag, newEtag, payload };
-            return await _db.ScriptEvaluateAsync(_preparedWriteScriptHash, new RedisKey[] { key }, args).ConfigureAwait(false);
+            return await db.ScriptEvaluateAsync(_preparedWriteScriptHash, new RedisKey[] { key }, args).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
