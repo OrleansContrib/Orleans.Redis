@@ -116,6 +116,24 @@ namespace Orleans.Persistence.Redis.Tests
         }
 
         [Fact]
+        public async Task Json_TestRedisScriptCacheClearBeforeGrainWriteState()
+        {
+            var grain = _cluster.GrainFactory.GetGrain<IJsonTestGrain>(1111);
+            var now = DateTime.UtcNow;
+            var guid = Guid.NewGuid();
+
+            await _fixture.Database.ExecuteAsync("SCRIPT", "FLUSH", "SYNC");
+            await grain.Set("string value", 12345, now, guid, _cluster.GrainFactory.GetGrain<IJsonTestGrain>(2222));
+
+            var result = await grain.Get();
+            Assert.Equal("string value", result.Item1);
+            Assert.Equal(12345, result.Item2);
+            Assert.Equal(now, result.Item3);
+            Assert.Equal(guid, result.Item4);
+            Assert.Equal(2222, result.Item5.GetPrimaryKeyLong());
+        }
+
+        [Fact]
         public async Task Json_BackwardsCompatible_ETag_Writes()
         {
             var jsonSettings = new JsonSerializerSettings()
@@ -168,8 +186,10 @@ namespace Orleans.Persistence.Redis.Tests
             Assert.Equal(newGrain.GetPrimaryKeyLong(), resultAfterWrite.Item5.GetPrimaryKeyLong());
         }
 
-        [Fact]
-        public async Task Json_BackwardsCompatible_MigrationFailsAtRead_MigrationAttemptedAtWrite()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task Json_BackwardsCompatible_MigrationFailsAtRead_MigrationAttemptedAtWrite(bool flushScriptsCacheBeforeMigration)
         {
             var jsonSettings = new JsonSerializerSettings()
             {
@@ -197,7 +217,7 @@ namespace Orleans.Persistence.Redis.Tests
             var grainRef = await grain.GetReference();
             var key = $"{grainRef.ToKeyString()}|json";
             await _fixture.Database.StringSetAsync(key, testState);
-            
+
             var result = await grain.Get();
             Assert.Equal(state.StringValue, result.Item1);
             Assert.Equal(state.IntValue, result.Item2);
@@ -211,6 +231,9 @@ namespace Orleans.Persistence.Redis.Tests
             // Revert key to a simple key value
             await _fixture.Database.StringSetAsync(key, testState);
             
+            if (flushScriptsCacheBeforeMigration)
+                await _fixture.Database.ExecuteAsync("SCRIPT", "FLUSH", "SYNC");
+
             // Verify that state can be written
             var newString = "New string value";
             var newNow = DateTime.UtcNow;
