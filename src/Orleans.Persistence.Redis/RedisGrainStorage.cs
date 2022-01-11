@@ -108,6 +108,7 @@ namespace Orleans.Persistence
         {
             Debug.Assert(_connection is not null);
             Debug.Assert(_preparedWriteScript is not null);
+            Debug.Assert(_redisOptions.EndPoints.Count > 0);
 
             var loadTasks = new Task<LoadedLuaScript>[_redisOptions.EndPoints.Count];
             for (int i = 0; i < _redisOptions.EndPoints.Count; i++)
@@ -118,7 +119,7 @@ namespace Orleans.Persistence
                 loadTasks[i] = _preparedWriteScript.LoadAsync(server);
             }
             await Task.WhenAll(loadTasks).ConfigureAwait(false);
-            return loadTasks.First().Result.Hash;
+            return loadTasks[0].Result.Hash;
         }
 
         /// <inheritdoc />
