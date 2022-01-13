@@ -130,7 +130,7 @@ namespace Orleans.Persistence
             try
             {
                 var hashEntries = await _db.HashGetAllAsync(key).ConfigureAwait(false);
-                if (hashEntries.Count() == 2)
+                if (hashEntries.Length == 2)
                 {
                     var etagEntry = hashEntries.Single(e => e.Name == "etag");
                     var valueEntry = hashEntries.Single(e => e.Name == "data");
