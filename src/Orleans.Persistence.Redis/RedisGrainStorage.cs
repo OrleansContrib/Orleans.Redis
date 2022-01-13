@@ -74,7 +74,7 @@ namespace Orleans.Persistence
                 }
 
                 _redisOptions = ConfigurationOptions.Parse(_options.ConnectionString);
-                _connection = await ConnectionMultiplexer.ConnectAsync(_redisOptions);
+                _connection = await ConnectionMultiplexer.ConnectAsync(_redisOptions).ConfigureAwait(false);
 
                 if (_options.DatabaseNumber.HasValue)
                 {
@@ -129,7 +129,7 @@ namespace Orleans.Persistence
 
             try
             {
-                var hashEntries = await _db.HashGetAllAsync(key);
+                var hashEntries = await _db.HashGetAllAsync(key).ConfigureAwait(false);
                 if (hashEntries.Count() == 2)
                 {
                     var etagEntry = hashEntries.Single(e => e.Name == "etag");
