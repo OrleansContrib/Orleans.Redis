@@ -110,10 +110,11 @@ namespace Orleans.Persistence
             Debug.Assert(_preparedWriteScript is not null);
             Debug.Assert(_redisOptions.EndPoints.Count > 0);
 
-            var loadTasks = new Task<LoadedLuaScript>[_redisOptions.EndPoints.Count];
-            for (int i = 0; i < _redisOptions.EndPoints.Count; i++)
+            System.Net.EndPoint[] endPoints = _connection.GetEndPoints();
+            var loadTasks = new Task<LoadedLuaScript>[endPoints.Length];
+            for (int i = 0; i < endPoints.Length; i++)
             {
-                var endpoint = _redisOptions.EndPoints.ElementAt(i);
+                var endpoint = endPoints.ElementAt(i);
                 var server = _connection.GetServer(endpoint);
 
                 loadTasks[i] = _preparedWriteScript.LoadAsync(server);
