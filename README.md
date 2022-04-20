@@ -59,7 +59,7 @@ Orleans clustering provider for Redis
 
 Redis is a straight key/value store. Membership data is stored as a hash.
 
-If you want to quickly test it, clone this repo and go to the [samples directory](https://github.com/OrleansContrib/Orleans.Redis/tree/master/samples) for instructions on how to run a sample cluster.
+If you want to quickly test it, clone this repo and go to the [samples directory](https://github.com/OrleansContrib/Orleans.Redis/tree/main/samples) for instructions on how to run a sample cluster.
 
 ### Installation
 
@@ -122,4 +122,4 @@ At the moment the gateway list is provided by the underlying membership provider
 
 ## License
 
-This project is licensed under the [MIT license](https://github.com/OrleansContrib/Orleans.Redis/blob/master/LICENSE).
+This project is licensed under the [MIT license](https://github.com/OrleansContrib/Orleans.Redis/blob/main/LICENSE).
