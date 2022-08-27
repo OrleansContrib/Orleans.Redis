@@ -84,6 +84,18 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
+        /// Add custom redis serializer
+        /// </summary>
+        /// <param name="builder"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public static ISiloBuilder AddRedisGrainStorageSerializer<T>(this ISiloBuilder builder)
+            where T : class, IRedisDataSerializer
+        {
+            return builder.ConfigureServices(services => services.AddTransient<IRedisDataSerializer, T>());
+        }
+
+        /// <summary>
         /// Adds a Redis grain storage provider as the default provider
         /// </summary>
         public static IServiceCollection AddRedisGrainStorageAsDefault(this IServiceCollection services, Action<RedisStorageOptions> configureOptions)

@@ -20,20 +20,23 @@ namespace Orleans.Persistence
         {
             IOptionsMonitor<RedisStorageOptions> options = services.GetRequiredService<IOptionsMonitor<RedisStorageOptions>>();
 
-            IRedisDataSerializer serializer;
+            IRedisDataSerializer serializer = services.GetService<IRedisDataSerializer>();
             var redisStorageOptions = options.Get(name);
-            if (redisStorageOptions.UseJson)
-            {
-                serializer =  new NewtonsoftJsonRedisDataSerializer(services.GetService<ITypeResolver>(),
-                    services.GetService<IGrainFactory>(), redisStorageOptions.ConfigureJsonSerializerSettings);
-            }
-            else
-            {
-                serializer =  new SerializationManagerRedisDataSerializer(services.GetService<SerializationManager>());
-            }
-            
 
-            
+            if (serializer == null)
+            {
+                if (redisStorageOptions.UseJson)
+                {
+                    serializer =  new NewtonsoftJsonRedisDataSerializer(services.GetService<ITypeResolver>(),
+                        services.GetService<IGrainFactory>(), redisStorageOptions.ConfigureJsonSerializerSettings);
+                }
+                else
+                {
+                    serializer =  new SerializationManagerRedisDataSerializer(services.GetService<SerializationManager>());
+                }
+            }
+
+
             return ActivatorUtilities.CreateInstance<RedisGrainStorage>(services, serializer, redisStorageOptions, name);
         }
     }
