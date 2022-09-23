@@ -1,26 +1,27 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Sdk Name="Microsoft.Build.CentralPackageVersions" Version="2.1.3" />
 
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp3.1;net5.0;net6.0</TargetFrameworks>
+    <TargetFrameworks>net5.0;net6.0</TargetFrameworks>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.10.0" />
-    <PackageReference Include="Microsoft.Orleans.OrleansRuntime" Version="3.4.3" />
-    <PackageReference Include="Microsoft.Orleans.TestingHost" Version="3.4.3" />
-    <PackageReference Include="xunit" Version="2.4.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Microsoft.Orleans.OrleansRuntime" />
+    <PackageReference Include="Microsoft.Orleans.TestingHost" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.Orleans.Core" Version="3.4.3" />
-    <PackageReference Include="Microsoft.Orleans.Runtime.Legacy" Version="2.4.5" />
-    <PackageReference Include="Microsoft.Orleans.Server" Version="3.4.3" />
-    <PackageReference Include="StackExchange.Redis" Version="2.2.62" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.2" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="5.0.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="Microsoft.Orleans.Core" />
+    <PackageReference Include="Microsoft.Orleans.Runtime.Legacy" />
+    <PackageReference Include="Microsoft.Orleans.Server" />
+    <PackageReference Include="StackExchange.Redis" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Newtonsoft.Json" />
   </ItemGroup>
 
   <ItemGroup>
@@ -30,7 +31,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Update="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" />
   </ItemGroup>
 
 </Project>
