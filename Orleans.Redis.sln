@@ -23,9 +23,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Orleans.Reminders.Redis", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Orleans.Reminders.Redis.Tests", "test\Orleans.Reminders.Redis.Tests\Orleans.Reminders.Redis.Tests.csproj", "{93784B16-A101-4E1D-90E0-07321840A25A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.Reminders.Redis.TestGrainInterfaces", "test\Orleans.Reminders.Redis.TestGrainInterfaces\Orleans.Reminders.Redis.TestGrainInterfaces.csproj", "{AE9BCC1F-5E37-4EB2-B7F6-B39480F305F1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Orleans.Reminders.Redis.TestGrainInterfaces", "test\Orleans.Reminders.Redis.TestGrainInterfaces\Orleans.Reminders.Redis.TestGrainInterfaces.csproj", "{AE9BCC1F-5E37-4EB2-B7F6-B39480F305F1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.Reminders.Redis.TestGrains", "test\Orleans.Reminders.Redis.TestGrains\Orleans.Reminders.Redis.TestGrains.csproj", "{6BC99DF6-E0A0-4DE7-BBCF-B1CE40E67C1D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Orleans.Reminders.Redis.TestGrains", "test\Orleans.Reminders.Redis.TestGrains\Orleans.Reminders.Redis.TestGrains.csproj", "{6BC99DF6-E0A0-4DE7-BBCF-B1CE40E67C1D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D4641EB6-DA0C-44E1-B454-837919919E43}"
+	ProjectSection(SolutionItems) = preProject
+		Packages.props = Packages.props
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
