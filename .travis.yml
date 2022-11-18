@@ -1,7 +1,6 @@
 language: csharp
 mono: none
-dotnet: 2.1.402
+dotnet: 7.0.100
 script:
- - dotnet restore
- - dotnet pack 
- 
+  - dotnet restore
+  - dotnet pack
