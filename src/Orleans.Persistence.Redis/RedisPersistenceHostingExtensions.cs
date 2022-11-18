@@ -22,38 +22,6 @@ namespace Microsoft.Extensions.Hosting
         /// <summary>
         /// Adds a Redis grain storage provider as the default provider
         /// </summary>
-        public static ISiloHostBuilder AddRedisGrainStorageAsDefault(this ISiloHostBuilder builder, Action<RedisStorageOptions> configureOptions)
-        {
-            return builder.AddRedisGrainStorage(ProviderConstants.DEFAULT_STORAGE_PROVIDER_NAME, configureOptions);
-        }
-
-        /// <summary>
-        /// Adds a Redis grain storage provider.
-        /// </summary>
-        public static ISiloHostBuilder AddRedisGrainStorage(this ISiloHostBuilder builder, string name, Action<RedisStorageOptions> configureOptions)
-        {
-            return builder.ConfigureServices(services => services.AddRedisGrainStorage(name, configureOptions));
-        }
-
-        /// <summary>
-        /// Adds a Redis grain storage provider as the default provider
-        /// </summary>
-        public static ISiloHostBuilder AddRedisGrainStorageAsDefault(this ISiloHostBuilder builder, Action<OptionsBuilder<RedisStorageOptions>> configureOptions = null)
-        {
-            return builder.AddRedisGrainStorage(ProviderConstants.DEFAULT_STORAGE_PROVIDER_NAME, configureOptions);
-        }
-
-        /// <summary>
-        /// Adds a Redis grain storage provider.
-        /// </summary>
-        public static ISiloHostBuilder AddRedisGrainStorage(this ISiloHostBuilder builder, string name, Action<OptionsBuilder<RedisStorageOptions>> configureOptions = null)
-        {
-            return builder.ConfigureServices(services => services.AddRedisGrainStorage(name, configureOptions));
-        }
-
-        /// <summary>
-        /// Adds a Redis grain storage provider as the default provider
-        /// </summary>
         public static ISiloBuilder AddRedisGrainStorageAsDefault(this ISiloBuilder builder, Action<RedisStorageOptions> configureOptions)
         {
             return builder.AddRedisGrainStorage(ProviderConstants.DEFAULT_STORAGE_PROVIDER_NAME, configureOptions);

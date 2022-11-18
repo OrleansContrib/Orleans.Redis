@@ -5,6 +5,8 @@ using System;
 using Orleans.Persistence.Redis.Serialization;
 using Orleans.Runtime;
 using Orleans.Serialization;
+using Orleans.Serialization.TypeSystem;
+using System.Runtime.CompilerServices;
 
 namespace Orleans.Persistence
 {
@@ -22,18 +24,26 @@ namespace Orleans.Persistence
 
             IRedisDataSerializer serializer;
             var redisStorageOptions = options.Get(name);
-            if (redisStorageOptions.UseJson)
-            {
-                serializer =  new NewtonsoftJsonRedisDataSerializer(services.GetService<ITypeResolver>(),
-                    services.GetService<IGrainFactory>(), redisStorageOptions.ConfigureJsonSerializerSettings);
-            }
-            else
-            {
-                serializer =  new SerializationManagerRedisDataSerializer(services.GetService<SerializationManager>());
-            }
-            
 
-            
+            switch (redisStorageOptions.Formatter)
+            {
+                case "native":
+                case "json":
+                    serializer = new NativeJsonRedisDataSerializer(services);
+                    break;
+
+                case "newtonsoft":
+                    serializer = new NewtonsoftJsonRedisDataSerializer(services);
+                    break;
+
+                case "binary":
+                    serializer = new BinaryFormatterRedisDataSerializer();
+                    break;
+
+                default:
+                    throw new OrleansConfigurationException("Invalid formatter");
+            }         
+
             return ActivatorUtilities.CreateInstance<RedisGrainStorage>(services, serializer, redisStorageOptions, name);
         }
     }

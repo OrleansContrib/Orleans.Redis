@@ -16,12 +16,11 @@ namespace Orleans.Persistence.Redis.Serialization
         /// <summary>
         /// Initializes a new instance of <see cref="NewtonsoftJsonRedisDataSerializer"/>.
         /// </summary>
-        /// <param name="typeResolver"></param>
-        /// <param name="grainFactory"></param>
+        /// <param name="services"></param>
         /// <param name="configureJsonSerializeSettings"></param>
-        public NewtonsoftJsonRedisDataSerializer(ITypeResolver typeResolver, IGrainFactory grainFactory, Action<JsonSerializerSettings> configureJsonSerializeSettings = null)
+        public NewtonsoftJsonRedisDataSerializer(IServiceProvider services, Action<JsonSerializerSettings> configureJsonSerializeSettings = null)
         {
-            _jsonSettings = OrleansJsonSerializer.GetDefaultSerializerSettings(typeResolver, grainFactory);
+            _jsonSettings = OrleansJsonSerializerSettings.GetDefaultSerializerSettings(services);
             configureJsonSerializeSettings?.Invoke(_jsonSettings);
         }
 
@@ -35,9 +34,15 @@ namespace Orleans.Persistence.Redis.Serialization
         }
 
         /// <inheritdoc />
-        public object DeserializeObject(Type type, RedisValue serializedValue)
+        //public object DeserializeObject(Type type, RedisValue serializedValue)
+        //{
+        //    return JsonConvert.DeserializeObject(serializedValue, type, _jsonSettings);
+        //}
+
+        /// <inheritdoc />
+        public T DeserializeObject<T>(RedisValue serializedValue)
         {
-            return JsonConvert.DeserializeObject(serializedValue, type, _jsonSettings);
+            return JsonConvert.DeserializeObject<T>(serializedValue, _jsonSettings);
         }
     }
 }

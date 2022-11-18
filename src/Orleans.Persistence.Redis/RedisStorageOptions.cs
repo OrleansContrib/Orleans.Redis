@@ -12,18 +12,12 @@ namespace Orleans.Persistence
         /// <summary>
         /// The connection string.
         /// </summary>
-        [Obsolete("Use ConnectionString")]
-        public string DataConnectionString { get => this.ConnectionString; set => this.ConnectionString = value; }
-
-        /// <summary>
-        /// The connection string.
-        /// </summary>
         public string ConnectionString { get; set; } = "localhost:6379";
 
         /// <summary>
         /// Whether or not to use JSON for serialization.
         /// </summary>
-        public bool UseJson { get; set; } = true;
+        public string Formatter { get; set; } = "native";
 
         /// <summary>
         /// Whether or not to delete state during a clear operation.

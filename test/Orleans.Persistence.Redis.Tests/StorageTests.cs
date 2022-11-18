@@ -159,8 +159,8 @@ namespace Orleans.Persistence.Redis.Tests
             var testState = JsonConvert.SerializeObject(state, jsonSettings);
 
             var grain = _cluster.GrainFactory.GetGrain<IJsonTestGrain>(12345999);
-            var grainRef = await grain.GetReference();
-            var key = $"{grainRef.ToKeyString()}|json";
+            var grainId = grain.GetGrainId();
+            var key = $"{grainId}|json";
             await _fixture.Database.StringSetAsync(key, testState);
             
             var result = await grain.Get();
@@ -214,8 +214,8 @@ namespace Orleans.Persistence.Redis.Tests
             var testState = JsonConvert.SerializeObject(state, jsonSettings);
 
             var grain = _cluster.GrainFactory.GetGrain<IJsonTestGrain>(12345999);
-            var grainRef = await grain.GetReference();
-            var key = $"{grainRef.ToKeyString()}|json";
+            var grainId = grain.GetGrainId();
+            var key = $"{grainId}|json";
             await _fixture.Database.StringSetAsync(key, testState);
 
             var result = await grain.Get();
@@ -256,12 +256,12 @@ namespace Orleans.Persistence.Redis.Tests
             var now = DateTime.UtcNow;
             var guid = Guid.NewGuid();
             var grain = _cluster.GrainFactory.GetGrain<IJsonTestGrain>(54321);
-            var grainRef = await grain.GetReference();
+            var grainId = grain.GetGrainId();
 
             var stuff = await grain.Get();
             var scheduler = TaskScheduler.Current;
 
-            var key = $"{grainRef.ToKeyString()}|json";
+            var key = $"{grainId}|json";
             await _fixture.Database.HashSetAsync(key, new[] { new HashEntry("etag", "derp") });
 
             var otherGrain = _cluster.GrainFactory.GetGrain<IJsonTestGrain>(2222);
@@ -274,7 +274,7 @@ namespace Orleans.Persistence.Redis.Tests
             var strmId = Guid.NewGuid();
 
             var streamProv = _client.GetStreamProvider("SMSProvider");
-            var stream = streamProv.GetStream<int>(strmId, "test1");
+            var stream = streamProv.GetStream<int>("test1", strmId);
 
             var handle = await stream.SubscribeAsync(
                 (e, t) => { return Task.CompletedTask; },
@@ -288,7 +288,7 @@ namespace Orleans.Persistence.Redis.Tests
             var strmId = Guid.NewGuid();
 
             var streamProv = _client.GetStreamProvider("SMSProvider");
-            var stream = streamProv.GetStream<int>(strmId, "test1");
+            var stream = streamProv.GetStream<int>("test1", strmId);
             
             var handle = await stream.SubscribeAsync(
                 (i, t) => {
@@ -332,7 +332,7 @@ namespace Orleans.Persistence.Redis.Tests
             var strmId = Guid.Parse("761E3BEC-636E-4F6F-A56B-9CC57E66B712");
 
             var streamProv = _client.GetStreamProvider("SMSProvider");
-            IAsyncStream<int> stream = streamProv.GetStream<int>(strmId, "test1");
+            IAsyncStream<int> stream = streamProv.GetStream<int>("test1", strmId);
             //IAsyncStream<int> streamIn = streamProv.GetStream<int>(strmId, "test1");
 
             for (int i = 0; i < 25; i++)
@@ -372,7 +372,7 @@ namespace Orleans.Persistence.Redis.Tests
 
             Assert.Equal(2, sh.Count);
 
-            IAsyncStream<int> stream2 = streamProv.GetStream<int>(strmId, "test1");
+            IAsyncStream<int> stream2 = streamProv.GetStream<int>("test1", strmId);
 
             for (int i = 10000; i < 25; i++)
             {

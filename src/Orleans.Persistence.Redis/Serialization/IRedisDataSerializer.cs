@@ -26,6 +26,13 @@ namespace Orleans.Persistence.Redis.Serialization
         /// <param name="type">The type of the deserialized instance.</param>
         /// <param name="serializedValue">The serialized data.</param>
         /// <returns>The deserialized instance.</returns>
-        object DeserializeObject(Type type, RedisValue serializedValue);
+        //object DeserializeObject(Type type, RedisValue serializedValue);
+
+        /// <summary>
+        /// Deserializes the serialized object data of type T.
+        /// </summary>
+        /// <param name="serializedValue">The serialized data.</param>
+        /// <returns>The deserialized instance.</returns>
+        T DeserializeObject<T>(RedisValue serializedValue);
     }
 }

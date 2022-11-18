@@ -35,7 +35,7 @@ namespace Orleans.Persistence.Redis.Tests
             Cluster = builder.Build();
 
             Cluster.Deploy();
-            Cluster.InitializeClient();
+            Cluster.InitializeClientAsync();
             Client = Cluster.Client;
 
             var redisOptions = ConfigurationOptions.Parse(redisConnectionString);
@@ -51,28 +51,29 @@ namespace Orleans.Persistence.Redis.Tests
         {
             public void Configure(ISiloBuilder builder)
             {
-                //get the redis connection string from the testcluster's config
-                var redisEP = builder.GetConfigurationValue("RedisConnectionString");
+                var redisHost = Environment.GetEnvironmentVariable("REDIS_HOST") ?? "localhost";
+                var redisPort = Environment.GetEnvironmentVariable("REDIS_PORT") ?? "6379";
+                var redisConnectionString = $"{redisHost}:{redisPort}, allowAdmin=true";
 
                 builder.AddMemoryGrainStorageAsDefault();
                 builder.AddRedisGrainStorage("REDIS-JSON", optionsBuilder => optionsBuilder.Configure(options =>
                 {
-                    options.UseJson = true;
-                    options.ConnectionString = redisEP;
+                    options.Formatter = "native";
+                    options.ConnectionString = redisConnectionString;
                 }));
                 builder.AddRedisGrainStorage("REDIS-BINARY", optionsBuilder => optionsBuilder.Configure(options =>
                 {
-                    options.UseJson = false;
-                    options.ConnectionString = redisEP;
+                    options.Formatter = "binary";
+                    options.ConnectionString = redisConnectionString;
                 }));
 
                 builder.AddRedisGrainStorage("PubSubStore", optionsBuilder => optionsBuilder.Configure(options =>
                 {
-                    options.UseJson = false;
-                    options.ConnectionString = redisEP;
+                    options.Formatter = "binary";
+                    options.ConnectionString = redisConnectionString;
                 }));
 
-                builder.AddSimpleMessageStreamProvider("SMSProvider");
+                builder.AddMemoryStreams("SMSProvider"); //.AddSimpleMessageStreamProvider("SMSProvider");
             }
         }
 
@@ -80,14 +81,14 @@ namespace Orleans.Persistence.Redis.Tests
         {
             public void Configure(IConfiguration configuration, IClientBuilder clientBuilder)
             {
-                clientBuilder.AddSimpleMessageStreamProvider("SMSProvider");
+                clientBuilder.AddMemoryStreams("SMSProvider"); //.AddSimpleMessageStreamProvider("SMSProvider");
             }
         }
 
         public void Dispose()
         {
             Database.ExecuteAsync("FLUSHALL").Wait();
-            Client.Dispose();
+            //Client.Dispose();
             Cluster.StopAllSilos();
             _redis?.Dispose();
         }
