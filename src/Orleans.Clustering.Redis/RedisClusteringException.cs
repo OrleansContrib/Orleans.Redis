@@ -2,8 +2,6 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
-[assembly: InternalsVisibleTo("Orleans.Clustering.Redis.Test")]
-
 namespace Orleans.Clustering.Redis
 {
     /// <summary>
