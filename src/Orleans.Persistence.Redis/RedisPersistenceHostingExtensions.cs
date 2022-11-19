@@ -87,8 +87,10 @@ namespace Microsoft.Extensions.Hosting
             services.ConfigureNamedOptionForLogging<RedisStorageOptions>(name);
             services.TryAddSingleton(sp => sp.GetServiceByName<IGrainStorage>(ProviderConstants.DEFAULT_STORAGE_PROVIDER_NAME));
             
-            return services.AddSingletonNamedService(name, RedisGrainStorageFactory.Create)
-                           .AddSingletonNamedService(name, (s, n) => (ILifecycleParticipant<ISiloLifecycle>)s.GetRequiredServiceByName<IGrainStorage>(n));
+            services.AddSingletonNamedService(name, RedisGrainStorageFactory.Create)
+                .AddSingletonNamedService(name, (s, n) => (ILifecycleParticipant<ISiloLifecycle>)s.GetRequiredServiceByName<IGrainStorage>(n));
+
+            return services;
         }
     }
 }

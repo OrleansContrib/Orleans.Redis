@@ -2,9 +2,10 @@
 
 namespace Orleans.Persistence.Redis.TestGrainInterfaces
 {
-    [Serializable]
+    [GenerateSerializer]
     public class StreamItem
     {
+        [Id(0)]
         public string Message { get; set; }
     }
 }

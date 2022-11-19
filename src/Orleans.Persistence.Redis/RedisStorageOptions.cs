@@ -35,7 +35,6 @@ namespace Orleans.Persistence
         public int InitStage { get; set; } = ServiceLifecycleStage.ApplicationServices;
 
         /// <summary>
-        /// If <see cref="UseJson"/> is set to <see langword="true" /> this action can add additional configuration to the <see cref="JsonSerializerSettings"/>.
         /// This can be used to inject custom JSON converters if required by custom grain states.
         /// </summary>
         /// <remarks>The settings from <see cref="OrleansJsonSerializer"/> are used by default.</remarks>
