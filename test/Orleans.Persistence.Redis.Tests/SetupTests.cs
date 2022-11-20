@@ -33,8 +33,8 @@ namespace Orleans.Persistence.Redis.Tests
                             {
                                 options.ConnectionString = connectionString;
                             }));
-                    })
-                    .Build();
+                    });
+                silo.Build();
             });
         }
     }

@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Orleans.Hosting;
+using Orleans.Providers;
 using Orleans.TestingHost;
 using StackExchange.Redis;
 using System;
@@ -58,22 +59,18 @@ namespace Orleans.Persistence.Redis.Tests
                 builder.AddMemoryGrainStorageAsDefault();
                 builder.AddRedisGrainStorage("REDIS-JSON", optionsBuilder => optionsBuilder.Configure(options =>
                 {
-                    options.Formatter = "native";
                     options.ConnectionString = redisConnectionString;
                 }));
                 builder.AddRedisGrainStorage("REDIS-BINARY", optionsBuilder => optionsBuilder.Configure(options =>
                 {
-                    options.Formatter = "binary";
                     options.ConnectionString = redisConnectionString;
                 }));
-
                 builder.AddRedisGrainStorage("PubSubStore", optionsBuilder => optionsBuilder.Configure(options =>
                 {
-                    options.Formatter = "binary";
                     options.ConnectionString = redisConnectionString;
                 }));
 
-                builder.AddMemoryStreams("SMSProvider"); //.AddSimpleMessageStreamProvider("SMSProvider");
+                builder.AddMemoryStreams<DefaultMemoryMessageBodySerializer>("MSProvider");
             }
         }
 
@@ -81,7 +78,7 @@ namespace Orleans.Persistence.Redis.Tests
         {
             public void Configure(IConfiguration configuration, IClientBuilder clientBuilder)
             {
-                clientBuilder.AddMemoryStreams("SMSProvider"); //.AddSimpleMessageStreamProvider("SMSProvider");
+                clientBuilder.AddMemoryStreams<DefaultMemoryMessageBodySerializer>("MSProvider");
             }
         }
 

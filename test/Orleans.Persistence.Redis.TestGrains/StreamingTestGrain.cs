@@ -13,7 +13,7 @@ namespace Orleans.Persistence.Redis.TestGrains
         
         public override async Task OnActivateAsync(CancellationToken cancellationToken)
         {
-            var streamProvider = this.GetStreamProvider("SMSProvider");
+            var streamProvider = this.GetStreamProvider("MSProvider");
 
             var streamItemStream = streamProvider.GetStream<StreamItem>("StreamItems", this.GetPrimaryKey());
 

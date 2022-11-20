@@ -273,7 +273,7 @@ namespace Orleans.Persistence.Redis.Tests
         {
             var strmId = Guid.NewGuid();
 
-            var streamProv = _client.GetStreamProvider("SMSProvider");
+            var streamProv = _client.GetStreamProvider("MSProvider");
             var stream = streamProv.GetStream<int>("test1", strmId);
 
             var handle = await stream.SubscribeAsync(
@@ -287,7 +287,7 @@ namespace Orleans.Persistence.Redis.Tests
             var tcs = new TaskCompletionSource<int>();
             var strmId = Guid.NewGuid();
 
-            var streamProv = _client.GetStreamProvider("SMSProvider");
+            var streamProv = _client.GetStreamProvider("MSProvider");
             var stream = streamProv.GetStream<int>("test1", strmId);
             
             var handle = await stream.SubscribeAsync(
@@ -331,7 +331,7 @@ namespace Orleans.Persistence.Redis.Tests
             //var strmId = Guid.NewGuid();
             var strmId = Guid.Parse("761E3BEC-636E-4F6F-A56B-9CC57E66B712");
 
-            var streamProv = _client.GetStreamProvider("SMSProvider");
+            var streamProv = _client.GetStreamProvider("MSProvider");
             IAsyncStream<int> stream = streamProv.GetStream<int>("test1", strmId);
             //IAsyncStream<int> streamIn = streamProv.GetStream<int>(strmId, "test1");
 
