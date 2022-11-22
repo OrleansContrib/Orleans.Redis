@@ -172,7 +172,7 @@ namespace Orleans.Persistence
             catch (Exception e)
             {
                 _logger.LogError(
-                    "Failed to read grain state for {GrainType} grain with id {GrainReference} and storage key {Key}.",
+                    "Failed to read grain state for {GrainType} grain with id {GrainId} and storage key {Key}.",
                     grainType, grainId, key);
                 throw new RedisStorageException(Invariant($"Failed to read grain state for {grainType} grain with id {grainId} and storage key {key}."), e);
             }

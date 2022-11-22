@@ -18,24 +18,22 @@ namespace Orleans.Persistence.Redis.Tests
         [InlineData("123")]
         public void StorageOptionsValidator(string connectionString)
         {
-            var siloPort = 11111;
+            var siloPort    = 11111;
             int gatewayPort = 30000;
             var siloAddress = IPAddress.Loopback;
 
-            Assert.Throws<OrleansConfigurationException>(() => 
-            {
-                var silo = Host.CreateDefaultBuilder()
-                    .UseOrleans((ctx, builder) => {
-                        builder.Configure<ClusterOptions>(options => options.ClusterId = "TESTCLUSTER")
-                            .UseDevelopmentClustering(options => options.PrimarySiloEndpoint = new IPEndPoint(siloAddress, siloPort))
-                            .ConfigureEndpoints(siloAddress, siloPort, gatewayPort)
-                            .AddRedisGrainStorage("Redis", optionsBuilder => optionsBuilder.Configure(options =>
-                            {
-                                options.ConnectionString = connectionString;
-                            }));
-                    });
-                silo.Build();
-            });
+            var silo = Host.CreateDefaultBuilder()
+                .UseOrleans((ctx, builder) => {
+                    builder.Configure<ClusterOptions>(options => options.ClusterId = "TESTCLUSTER")
+                        .UseDevelopmentClustering(options => options.PrimarySiloEndpoint = new IPEndPoint(siloAddress, siloPort))
+                        .ConfigureEndpoints(siloAddress, siloPort, gatewayPort)
+                        .AddRedisGrainStorage("Redis", optionsBuilder => optionsBuilder.Configure(options =>
+                        {
+                            options.ConnectionString = connectionString;
+                        }));
+                });
+
+            Assert.Throws<OrleansConfigurationException>(() => silo.Build());
         }
     }
 }

@@ -24,26 +24,25 @@ namespace Orleans.Persistence.Redis.Tests
         }
 
         [Fact]
-        public async Task Binary_InitializeWithNoStateTest()
+        public async Task InitializeWithNoStateTest()
         {
-            var grain = _cluster.GrainFactory.GetGrain<IBinaryTestGrain>(0);
+            var grain = _cluster.GrainFactory.GetGrain<ITestGrain>(0);
             var result = await grain.Get();
 
             Assert.Equal(default(string), result.Item1);
             Assert.Equal(default(int), result.Item2);
             Assert.Equal(default(DateTime), result.Item3);
             Assert.Equal(default(Guid), result.Item4);
-            Assert.Equal(default(IBinaryTestGrain), result.Item5);
+            Assert.Equal(default(ITestGrain), result.Item5);
         }
 
         [Fact]
-        public async Task Binary_TestStaticIdentifierGrains()
+        public async Task TestStaticIdentifierGrains()
         {
-            // insert your grain test code here
-            var grain = _cluster.GrainFactory.GetGrain<IBinaryTestGrain>(12345);
+            var grain = _cluster.GrainFactory.GetGrain<ITestGrain>(12345);
             var now = DateTime.UtcNow;
             var guid = Guid.NewGuid();
-            await grain.Set("string value", 12345, now, guid, _cluster.GrainFactory.GetGrain<IBinaryTestGrain>(2222));
+            await grain.Set("string value", 12345, now, guid, _cluster.GrainFactory.GetGrain<ITestGrain>(2222));
             var result = await grain.Get();
             Assert.Equal("string value", result.Item1);
             Assert.Equal(12345, result.Item2);
@@ -51,16 +50,15 @@ namespace Orleans.Persistence.Redis.Tests
             Assert.Equal(guid, result.Item4);
             Assert.Equal(2222, result.Item5.GetPrimaryKeyLong());
 
-            var grain2 = _cluster.GrainFactory.GetGrain<IBinaryTestGrain2>(12345);
+            var grain2 = _cluster.GrainFactory.GetGrain<ITestGrain2>(12345);
             var result2 = await grain2.Get();
-
             Assert.Equal(default(string), result2.Item1);
             Assert.Equal(default(int), result2.Item2);
             Assert.Equal(default(DateTime), result2.Item3);
             Assert.Equal(default(Guid), result2.Item4);
-            Assert.Equal(default(IBinaryTestGrain), result2.Item5);
+            Assert.Equal(default(ITestGrain), result2.Item5);
 
-            await grain2.Set("string value2", 12345, now, guid, _cluster.GrainFactory.GetGrain<IBinaryTestGrain>(2222));
+            await grain2.Set("string value2", 12345, now, guid, _cluster.GrainFactory.GetGrain<ITestGrain>(2222));
             result2 = await grain2.Get();
             Assert.Equal("string value2", result2.Item1);
             Assert.Equal(12345, result2.Item2);
@@ -70,60 +68,14 @@ namespace Orleans.Persistence.Redis.Tests
         }
 
         [Fact]
-        public async Task Json_InitializeWithNoStateTest()
+        public async Task TestRedisScriptCacheClearBeforeGrainWriteState()
         {
-            var grain = _cluster.GrainFactory.GetGrain<IJsonTestGrain>(0);
-            var result = await grain.Get();
-
-            Assert.Equal(default(string), result.Item1);
-            Assert.Equal(default(int), result.Item2);
-            Assert.Equal(default(DateTime), result.Item3);
-            Assert.Equal(default(Guid), result.Item4);
-            Assert.Equal(default(IJsonTestGrain), result.Item5);
-        }
-
-        [Fact]
-        public async Task Json_TestStaticIdentifierGrains()
-        {
-            // insert your grain test code here
-            var grain = _cluster.GrainFactory.GetGrain<IJsonTestGrain>(12345);
-            var now = DateTime.UtcNow;
-            var guid = Guid.NewGuid();
-            await grain.Set("string value", 12345, now, guid, _cluster.GrainFactory.GetGrain<IJsonTestGrain>(2222));
-            var result = await grain.Get();
-            Assert.Equal("string value", result.Item1);
-            Assert.Equal(12345, result.Item2);
-            Assert.Equal(now, result.Item3);
-            Assert.Equal(guid, result.Item4);
-            Assert.Equal(2222, result.Item5.GetPrimaryKeyLong());
-
-            var grain2 = _cluster.GrainFactory.GetGrain<IJsonTestGrain2>(12345);
-            var result2 = await grain2.Get();
-
-            Assert.Equal(default(string), result2.Item1);
-            Assert.Equal(default(int), result2.Item2);
-            Assert.Equal(default(DateTime), result2.Item3);
-            Assert.Equal(default(Guid), result2.Item4);
-            Assert.Equal(default(IJsonTestGrain), result2.Item5);
-
-            await grain2.Set("string value2", 12345, now, guid, _cluster.GrainFactory.GetGrain<IJsonTestGrain>(2222));
-            result2 = await grain2.Get();
-            Assert.Equal("string value2", result2.Item1);
-            Assert.Equal(12345, result2.Item2);
-            Assert.Equal(now, result2.Item3);
-            Assert.Equal(guid, result2.Item4);
-            Assert.Equal(2222, result2.Item5.GetPrimaryKeyLong());
-        }
-
-        [Fact]
-        public async Task Json_TestRedisScriptCacheClearBeforeGrainWriteState()
-        {
-            var grain = _cluster.GrainFactory.GetGrain<IJsonTestGrain>(1111);
+            var grain = _cluster.GrainFactory.GetGrain<ITestGrain>(1111);
             var now = DateTime.UtcNow;
             var guid = Guid.NewGuid();
 
             await _fixture.Database.ExecuteAsync("SCRIPT", "FLUSH", "SYNC");
-            await grain.Set("string value", 12345, now, guid, _cluster.GrainFactory.GetGrain<IJsonTestGrain>(2222));
+            await grain.Set("string value", 12345, now, guid, _cluster.GrainFactory.GetGrain<ITestGrain>(2222));
 
             var result = await grain.Get();
             Assert.Equal("string value", result.Item1);
@@ -134,7 +86,7 @@ namespace Orleans.Persistence.Redis.Tests
         }
 
         [Fact]
-        public async Task Json_BackwardsCompatible_ETag_Writes()
+        public async Task BackwardsCompatible_ETag_Writes()
         {
             var jsonSettings = new JsonSerializerSettings()
             {
@@ -148,19 +100,19 @@ namespace Orleans.Persistence.Redis.Tests
             };
             var now = DateTime.UtcNow;
             var guid = Guid.NewGuid();
-            var state = new JsonTestGrainState
+            var state = new TestGrainState
             {
                 StringValue = "string value",
                 DateTimeValue = now,
                 GuidValue = guid,
                 IntValue = 12345,
-                GrainValue = _cluster.GrainFactory.GetGrain<IJsonTestGrain>(2222)
+                GrainValue = _cluster.GrainFactory.GetGrain<ITestGrain>(2222)
             };
             var testState = JsonConvert.SerializeObject(state, jsonSettings);
 
-            var grain = _cluster.GrainFactory.GetGrain<IJsonTestGrain>(12345999);
+            var grain = _cluster.GrainFactory.GetGrain<ITestGrain>(12345999);
             var grainId = grain.GetGrainId();
-            var key = $"{grainId}|json";
+            var key = grainId.ToString(); // $"{grainId}|json";
             await _fixture.Database.StringSetAsync(key, testState);
             
             var result = await grain.Get();
@@ -175,7 +127,7 @@ namespace Orleans.Persistence.Redis.Tests
             var newNow = DateTime.UtcNow;
             var newGuid = Guid.NewGuid();
             var newInt = 54321;
-            var newGrain = _cluster.GrainFactory.GetGrain<IJsonTestGrain>(2222);
+            var newGrain = _cluster.GrainFactory.GetGrain<ITestGrain>(2222);
             await grain.Set(newString, newInt, newNow, newGuid, newGrain);
             
             var resultAfterWrite = await grain.Get();
@@ -189,7 +141,7 @@ namespace Orleans.Persistence.Redis.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public async Task Json_BackwardsCompatible_MigrationFailsAtRead_MigrationAttemptedAtWrite(bool flushScriptsCacheBeforeMigration)
+        public async Task BackwardsCompatible_MigrationFailsAtRead_MigrationAttemptedAtWrite(bool flushScriptsCacheBeforeMigration)
         {
             var jsonSettings = new JsonSerializerSettings()
             {
@@ -203,17 +155,17 @@ namespace Orleans.Persistence.Redis.Tests
             };
             var now = DateTime.UtcNow;
             var guid = Guid.NewGuid();
-            var state = new JsonTestGrainState
+            var state = new TestGrainState
             {
                 StringValue = "string value",
                 DateTimeValue = now,
                 GuidValue = guid,
                 IntValue = 12345,
-                GrainValue = _cluster.GrainFactory.GetGrain<IJsonTestGrain>(2222)
+                GrainValue = _cluster.GrainFactory.GetGrain<ITestGrain>(2222)
             };
             var testState = JsonConvert.SerializeObject(state, jsonSettings);
 
-            var grain = _cluster.GrainFactory.GetGrain<IJsonTestGrain>(12345999);
+            var grain = _cluster.GrainFactory.GetGrain<ITestGrain>(12345999);
             var grainId = grain.GetGrainId();
             var key = $"{grainId}|json";
             await _fixture.Database.StringSetAsync(key, testState);
@@ -239,7 +191,7 @@ namespace Orleans.Persistence.Redis.Tests
             var newNow = DateTime.UtcNow;
             var newGuid = Guid.NewGuid();
             var newInt = 54321;
-            var newGrain = _cluster.GrainFactory.GetGrain<IJsonTestGrain>(2222);
+            var newGrain = _cluster.GrainFactory.GetGrain<ITestGrain>(2222);
             await grain.Set(newString, newInt, newNow, newGuid, newGrain);
             
             var resultAfterWrite = await grain.Get();
@@ -251,20 +203,20 @@ namespace Orleans.Persistence.Redis.Tests
         }
         
         [Fact]
-        public async Task Json_Double_Activation_ETag_Conflict_Simulation()
+        public async Task Double_Activation_ETag_Conflict_Simulation()
         {
             var now = DateTime.UtcNow;
             var guid = Guid.NewGuid();
-            var grain = _cluster.GrainFactory.GetGrain<IJsonTestGrain>(54321);
+            var grain = _cluster.GrainFactory.GetGrain<ITestGrain>(54321);
             var grainId = grain.GetGrainId();
 
             var stuff = await grain.Get();
             var scheduler = TaskScheduler.Current;
 
-            var key = $"{grainId}|json";
+            var key = grainId.ToString(); // $"{grainId}|json";
             await _fixture.Database.HashSetAsync(key, new[] { new HashEntry("etag", "derp") });
 
-            var otherGrain = _cluster.GrainFactory.GetGrain<IJsonTestGrain>(2222);
+            var otherGrain = _cluster.GrainFactory.GetGrain<ITestGrain>(2222);
             await Assert.ThrowsAsync<InconsistentStateException>(() => grain.Set("string value", 12345, now, guid, otherGrain));
         }
 

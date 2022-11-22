@@ -57,15 +57,7 @@ namespace Orleans.Persistence.Redis.Tests
                 var redisConnectionString = $"{redisHost}:{redisPort}, allowAdmin=true";
 
                 builder.AddMemoryGrainStorageAsDefault();
-                builder.AddRedisGrainStorage("REDIS-JSON", optionsBuilder => optionsBuilder.Configure(options =>
-                {
-                    options.ConnectionString = redisConnectionString;
-                }));
-                builder.AddRedisGrainStorage("REDIS-BINARY", optionsBuilder => optionsBuilder.Configure(options =>
-                {
-                    options.ConnectionString = redisConnectionString;
-                }));
-                builder.AddRedisGrainStorage("PubSubStore", optionsBuilder => optionsBuilder.Configure(options =>
+                builder.AddRedisGrainStorage("Redis", optionsBuilder => optionsBuilder.Configure(options =>
                 {
                     options.ConnectionString = redisConnectionString;
                 }));
