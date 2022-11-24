@@ -26,7 +26,7 @@ namespace Orleans.Persistence
         private readonly string _name;
         private readonly ILogger _logger;
         private readonly RedisStorageOptions _options;
-        private IGrainStorageSerializer _grainStorageSerializer;
+        private readonly IGrainStorageSerializer _grainStorageSerializer;
 
         private ConnectionMultiplexer _connection;
         private IDatabase _db;
@@ -189,7 +189,7 @@ namespace Orleans.Persistence
             RedisResult writeWithScriptResponse = null;
             try
             {
-                payload = _grainStorageSerializer.Serialize(grainState.State).ToString();
+                payload = new RedisValue(_grainStorageSerializer.Serialize<T>(grainState.State).ToString());
                 writeWithScriptResponse = await WriteToRedisUsingPreparedScriptAsync(payload,
                         etag: etag,
                         key: key,
@@ -207,14 +207,14 @@ namespace Orleans.Persistence
                     _logger.LogError(
                         "Failed to write grain state for {GrainType} grain with id {GrainId} with storage key {Key} while migrating to new structure",
                         grainType, grainId, key);
-                    throw new RedisStorageException(
-                        Invariant($"Failed to write grain state for {grainType} grain with id {grainId} with storage key {key} while migrating to new structure"));
+                    throw new RedisStorageException(Invariant($"Failed to write grain state for {grainType} grain with id {grainId} with storage key {key} while migrating to new structure"));
                 }
             }
             catch (Exception e)
             {
                 _logger.LogError(
-                    "Failed to write grain state for {grainType} grain with ID: {grainId} with redis key {key}.", grainType, grainId, key);
+                    "Failed to write grain state for {grainType} grain with ID: {grainId} with redis key {key}.",
+                    grainType, grainId, key);
                 throw new RedisStorageException(
                     Invariant($"Failed to write grain state for {grainType} grain with ID: {grainId} with redis key {key}."), e);
             }
@@ -278,7 +278,7 @@ namespace Orleans.Persistence
 
         private string GetKey(GrainId grainId)
         {
-            //return $"{grainId}|{_grainStorageSerializer.GetType().Name}";
+            //return $"{grainId.ToKeyString()}|{_serializer.FormatSpecifier}";
             return grainId.ToString();
         }
 

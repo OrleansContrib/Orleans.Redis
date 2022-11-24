@@ -1,14 +1,11 @@
-﻿using System;
-using Newtonsoft.Json;
-using Orleans.Serialization;
-using Orleans.Storage;
+﻿using Orleans.Storage;
 
 namespace Orleans.Persistence
 {
     /// <summary>
     /// Redis grain storage options.
     /// </summary>
-    public class RedisStorageOptions: IStorageProviderSerializerOptions
+    public class RedisStorageOptions : IStorageProviderSerializerOptions
     {
         /// <summary>
         /// The connection string.
@@ -30,12 +27,7 @@ namespace Orleans.Persistence
         /// </summary>
         public int InitStage { get; set; } = ServiceLifecycleStage.ApplicationServices;
 
-        /// <summary>
-        /// This can be used to inject custom JSON converters if required by custom grain states.
-        /// </summary>
-        /// <remarks>The settings from <see cref="OrleansJsonSerializer"/> are used by default.</remarks>
-        public Action<JsonSerializerSettings> ConfigureJsonSerializerSettings { get; set; }
-        
+        /// <inheritdoc/>
         public IGrainStorageSerializer GrainStorageSerializer { get; set; }
     }
 }
