@@ -3,36 +3,45 @@ using Orleans.Runtime;
 using Orleans.Persistence.Redis.TestGrainInterfaces;
 using System;
 using System.Threading.Tasks;
+using OrleansCodeGen.Orleans;
 
 namespace Orleans.Persistence.Redis.TestGrains
 {
-    [StorageProvider(ProviderName = "Redis")]
-    public class TestGrain : Grain<TestGrainState>, ITestGrain
+    public class TestGrain : Grain, ITestGrain
     {
+        private readonly IPersistentState<TestGrainState> _state;
+
+        public TestGrain(
+            [PersistentState("state", "Redis")] IPersistentState<TestGrainState> state
+            )
+        {
+            _state = state;
+        }
+        
         public Task Set(string stringValue, int intValue, DateTime dateTimeValue, Guid guidValue, ITestGrain grainValue)
         {
-            State.StringValue = stringValue;
-            State.IntValue = intValue;
-            State.DateTimeValue = dateTimeValue;
-            State.GuidValue = guidValue;
-            State.GrainValue = grainValue;
-            return WriteStateAsync();
+            _state.State.StringValue = stringValue;
+            _state.State.IntValue = intValue;
+            _state.State.DateTimeValue = dateTimeValue;
+            _state.State.GuidValue = guidValue;
+            _state.State.GrainValue = grainValue;
+            return _state.WriteStateAsync();
         }
 
         public async Task<Tuple<string, int, DateTime, Guid, ITestGrain>> Get()
         {
-            await ReadStateAsync();
+            await _state.ReadStateAsync();
             return new Tuple<string, int, DateTime, Guid, ITestGrain>(
-              State.StringValue,
-              State.IntValue,
-              State.DateTimeValue,
-              State.GuidValue,
-              State.GrainValue);
+              _state.State.StringValue,
+              _state.State.IntValue,
+              _state.State.DateTimeValue,
+              _state.State.GuidValue,
+              _state.State.GrainValue);
         }
 
         public Task Clear()
         {
-            return ClearStateAsync();
+            return _state.ClearStateAsync();
         }
 
         public Task<GrainId> GetId()

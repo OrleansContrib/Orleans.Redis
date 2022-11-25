@@ -22,7 +22,7 @@ namespace Orleans.Persistence.Redis.Tests
             int gatewayPort = 30000;
             var siloAddress = IPAddress.Loopback;
 
-            var silo = Host.CreateDefaultBuilder()
+            var host = Host.CreateDefaultBuilder()
                 .UseOrleans((ctx, builder) => {
                     builder.Configure<ClusterOptions>(options => options.ClusterId = "TESTCLUSTER")
                         .UseDevelopmentClustering(options => options.PrimarySiloEndpoint = new IPEndPoint(siloAddress, siloPort))
@@ -31,9 +31,9 @@ namespace Orleans.Persistence.Redis.Tests
                         {
                             options.ConnectionString = connectionString;
                         }));
-                });
+                }).Build();
 
-            Assert.Throws<OrleansConfigurationException>(() => silo.Build());
+            Assert.Throws<OrleansConfigurationException>(() => host.Start());
         }
     }
 }
