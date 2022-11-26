@@ -144,31 +144,6 @@ namespace Orleans.Persistence
                     grainState.ETag = Guid.NewGuid().ToString();
                 }
             }
-            //catch (RedisServerException rse) when (rse.Message is not null && rse.Message.StartsWith("WRONGTYPE ", StringComparison.Ordinal))
-            //{
-            //    // HGETALL returned error 'WRONGTYPE Operation against a key holding the wrong kind of value'
-            //    _logger.LogInformation("Encountered old format grain state for grain of type {GrainType} with id {GrainId} when reading hash state for key {Key}. Attempting to migrate.",
-            //        grainType, grainId, key);
-
-            //    // This is here for backwards compatibility where an earlier version stored only the data as a simple key without the etag.
-            //    // So get the data from the key and deserialize.
-            //    var simpleKeyValue = await _db.StringGetAsync(key).ConfigureAwait(false);
-            //    if (simpleKeyValue.HasValue)
-            //    {
-            //        grainState.State = _grainStorageSerializer.Deserialize<T>(simpleKeyValue);
-            //    }
-
-            //    // ETag does not exist in the storage so create a new one.
-            //    var etag = Guid.NewGuid().ToString();
-            //    grainState.ETag = etag;
-
-            //    if (!await MigrateAsync(key, etag, simpleKeyValue).ConfigureAwait(false))
-            //    {
-            //        _logger.LogError(
-            //            "Unexpected error while migrating grain state to new storage for grain of type {GrainType} with id {GrainId} and storage key {Key}. Will retry on next operation.",
-            //            grainType, grainId, key);
-            //    }
-            //}
             catch (Exception e)
             {
                 _logger.LogError(
@@ -196,20 +171,6 @@ namespace Orleans.Persistence
                         newEtag: newEtag)
                     .ConfigureAwait(false);
             }
-            //catch (RedisServerException rse) when (rse.Message is not null && rse.Message.Contains(" WRONGTYPE ")) // ordinal comparison
-            //{
-            //    // EVALSHA returned error like 'ERR Error running script (call to f_4ebd809f882ff80026566f2d7dc8674009a3d14d): @user_script:1: WRONGTYPE Operation against a key holding the wrong kind of value'
-            //    _logger.LogInformation("Encountered old format grain state for grain of type {GrainType} with id {GrainId} when writing hash state for key {Key}. Attempting to migrate.",
-            //        grainType, grainId, key);
-
-            //    if (!await MigrateAsync(key, newEtag, payload).ConfigureAwait(false))
-            //    {
-            //        _logger.LogError(
-            //            "Failed to write grain state for {GrainType} grain with id {GrainId} with storage key {Key} while migrating to new structure",
-            //            grainType, grainId, key);
-            //        throw new RedisStorageException(Invariant($"Failed to write grain state for {grainType} grain with id {grainId} with storage key {key} while migrating to new structure"));
-            //    }
-            //}
             catch (Exception e)
             {
                 _logger.LogError(
@@ -226,18 +187,6 @@ namespace Orleans.Persistence
 
             grainState.ETag = newEtag;
         }
-
-        //private async Task<bool> MigrateAsync(string key, string etag, RedisValue payload)
-        //{
-        //    var tx = _db.CreateTransaction();
-
-        //    // To allow WriteStateAsync to operate at all in these cases the original simple key must be deleted and a hash must be created in its place with the etag that was just assigned.
-        //    // The original key must be deleted first because a hash cannot overwrite a simple key.
-        //    // This will create a situation where if the delete succeeds and the HashSet fails the storage does not have the data before the grain state is again written.
-        //    _ = tx.KeyDeleteAsync(key);
-        //    _ = tx.HashSetAsync(key, new[] { new HashEntry("etag", etag), new HashEntry("data", payload) });
-        //    return await tx.ExecuteAsync().ConfigureAwait(false);
-        //}
 
         private Task<RedisResult> WriteToRedisUsingPreparedScriptAsync(RedisValue payload, string etag, string key, string newEtag)
         {

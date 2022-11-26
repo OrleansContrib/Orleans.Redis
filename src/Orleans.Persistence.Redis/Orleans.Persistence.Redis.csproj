@@ -11,11 +11,8 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Orleans.Serialization" Version="7.0.0" />
-		<!--<PackageReference Include="Microsoft.Orleans.Serialization.NewtonsoftJson" Version="7.0.0" />-->
-		<!--<PackageReference Include="Microsoft.Orleans.Serialization.SystemTextJson" Version="7.0.0" />-->
 		<PackageReference Include="Microsoft.Orleans.Server" Version="7.0.0" />
 		<PackageReference Include="StackExchange.Redis" Version="2.6.70" />
-		<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
 	</ItemGroup>
 
 	<ItemGroup>
