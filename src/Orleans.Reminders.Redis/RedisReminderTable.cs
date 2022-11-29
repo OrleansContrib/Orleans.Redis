@@ -113,7 +113,7 @@ namespace Orleans.Reminders.Redis
         {
             if (_logger.IsEnabled(LogLevel.Debug))
             {
-                _logger.LogDebug("UpsertRow entry = {0}, etag = {1}", entry.ToString(), entry.ETag);
+                _logger.LogDebug("UpsertRow entry = {Entry}, ETag = {ETag}", entry.ToString(), entry.ETag);
             }
 
             (string etag, string value) = ConvertFromEntry(entry);
@@ -129,8 +129,10 @@ namespace Orleans.Reminders.Redis
             }
             else
             {
-                _logger.LogWarning((int)ErrorCode.ReminderServiceBase,
-                    $"Intermediate error updating entry {entry} to Redis.");
+                _logger.LogWarning(
+                    (int)ErrorCode.ReminderServiceBase,
+                    "Intermediate error updating entry {Entry} to Redis.",
+                    entry);
                 throw new ReminderException("Failed to upsert reminder");
             }
         }

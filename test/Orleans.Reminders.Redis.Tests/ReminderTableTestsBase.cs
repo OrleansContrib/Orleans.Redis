@@ -38,7 +38,7 @@ namespace Orleans.Reminders.Redis.Tests
             string serviceId = Guid.NewGuid().ToString();
             string clusterId = "test-" + serviceId;
 
-            logger.LogInformation("ClusterId={0}", clusterId);
+            logger.LogInformation("ClusterId={ClusterId}", clusterId);
             clusterOptions = Options.Create(new ClusterOptions { ClusterId = clusterId, ServiceId = serviceId });
 
             IReminderTable rmndr = CreateRemindersTable();
