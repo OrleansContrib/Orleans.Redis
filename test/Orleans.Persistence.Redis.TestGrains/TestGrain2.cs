@@ -6,10 +6,10 @@ using System.Threading.Tasks;
 
 namespace Orleans.Persistence.Redis.TestGrains
 {
-    [StorageProvider(ProviderName = "REDIS-BINARY")]
-    public class BinaryTestGrain : Grain<BinaryTestGrainState>, IBinaryTestGrain
+    [StorageProvider(ProviderName = "Redis")]
+    public class TestGrain2 : Grain<TestGrainState2>, ITestGrain2
     {
-        public Task Set(string stringValue, int intValue, DateTime dateTimeValue, Guid guidValue, IBinaryTestGrain grainValue)
+        public Task Set(string stringValue, int intValue, DateTime dateTimeValue, Guid guidValue, ITestGrain grainValue)
         {
             State.StringValue = stringValue;
             State.IntValue = intValue;
@@ -19,10 +19,10 @@ namespace Orleans.Persistence.Redis.TestGrains
             return WriteStateAsync();
         }
 
-        public async Task<Tuple<string, int, DateTime, Guid, IBinaryTestGrain>> Get()
+        public async Task<Tuple<string, int, DateTime, Guid, ITestGrain>> Get()
         {
             await ReadStateAsync();
-            return new Tuple<string, int, DateTime, Guid, IBinaryTestGrain>(
+            return new Tuple<string, int, DateTime, Guid, ITestGrain>(
               State.StringValue,
               State.IntValue,
               State.DateTimeValue,
@@ -35,9 +35,9 @@ namespace Orleans.Persistence.Redis.TestGrains
             return ClearStateAsync();
         }
 
-        public Task<GrainReference> GetReference()
+        public Task<GrainId> GetId()
         {
-            return Task.FromResult(GrainReference);
+            return Task.FromResult(this.GetGrainId());
         }
     }
 }

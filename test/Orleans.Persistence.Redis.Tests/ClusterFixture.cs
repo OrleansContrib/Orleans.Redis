@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Orleans.Hosting;
+using Orleans.Providers;
 using Orleans.TestingHost;
 using StackExchange.Redis;
 using System;
@@ -14,15 +15,19 @@ namespace Orleans.Persistence.Redis.Tests
 
         public ClusterFixture()
         {
+            var redisHost = Environment.GetEnvironmentVariable("REDIS_HOST") ?? "localhost";
+            var redisPort = Environment.GetEnvironmentVariable("REDIS_PORT") ?? "6379";
+            var redisConnectionString = $"{redisHost}:{redisPort}, allowAdmin=true";
+
+            var redisOptions = ConfigurationOptions.Parse(redisConnectionString);
+            _redis = ConnectionMultiplexer.ConnectAsync(redisOptions).Result;
+            this.Database = _redis.GetDatabase();
+
             var builder = new TestClusterBuilder(1);
             builder.Options.ServiceId = "Service";
             builder.Options.ClusterId = "TestCluster";
             builder.AddSiloBuilderConfigurator<SiloConfigurator>();
-            builder.AddClientBuilderConfigurator<ClientConfigurator>();
-
-            var redisHost = Environment.GetEnvironmentVariable("REDIS_HOST") ?? "localhost";
-            var redisPort = Environment.GetEnvironmentVariable("REDIS_PORT") ?? "6379";
-            var redisConnectionString = $"{redisHost}:{redisPort}, allowAdmin=true";
+            //builder.AddClientBuilderConfigurator<ClientConfigurator>();
 
             builder.ConfigureHostConfiguration(config =>
             {
@@ -35,12 +40,8 @@ namespace Orleans.Persistence.Redis.Tests
             Cluster = builder.Build();
 
             Cluster.Deploy();
-            Cluster.InitializeClient();
+            Cluster.InitializeClientAsync().Wait();
             Client = Cluster.Client;
-
-            var redisOptions = ConfigurationOptions.Parse(redisConnectionString);
-            _redis = ConnectionMultiplexer.ConnectAsync(redisOptions).Result;
-            this.Database = _redis.GetDatabase();
         }
 
         public TestCluster Cluster { get; }
@@ -51,43 +52,32 @@ namespace Orleans.Persistence.Redis.Tests
         {
             public void Configure(ISiloBuilder builder)
             {
-                //get the redis connection string from the testcluster's config
-                var redisEP = builder.GetConfigurationValue("RedisConnectionString");
+                var redisHost = Environment.GetEnvironmentVariable("REDIS_HOST") ?? "localhost";
+                var redisPort = Environment.GetEnvironmentVariable("REDIS_PORT") ?? "6379";
+                var redisConnectionString = $"{redisHost}:{redisPort}, allowAdmin=true";
 
                 builder.AddMemoryGrainStorageAsDefault();
-                builder.AddRedisGrainStorage("REDIS-JSON", optionsBuilder => optionsBuilder.Configure(options =>
+                builder.AddRedisGrainStorage("Redis", optionsBuilder => optionsBuilder.Configure(options =>
                 {
-                    options.UseJson = true;
-                    options.ConnectionString = redisEP;
-                }));
-                builder.AddRedisGrainStorage("REDIS-BINARY", optionsBuilder => optionsBuilder.Configure(options =>
-                {
-                    options.UseJson = false;
-                    options.ConnectionString = redisEP;
+                    options.ConnectionString = redisConnectionString;
                 }));
 
-                builder.AddRedisGrainStorage("PubSubStore", optionsBuilder => optionsBuilder.Configure(options =>
-                {
-                    options.UseJson = false;
-                    options.ConnectionString = redisEP;
-                }));
-
-                builder.AddSimpleMessageStreamProvider("SMSProvider");
+                //builder.AddMemoryStreams<DefaultMemoryMessageBodySerializer>("MSProvider");
             }
         }
 
-        public class ClientConfigurator : IClientBuilderConfigurator
-        {
-            public void Configure(IConfiguration configuration, IClientBuilder clientBuilder)
-            {
-                clientBuilder.AddSimpleMessageStreamProvider("SMSProvider");
-            }
-        }
+        //public class ClientConfigurator : IClientBuilderConfigurator
+        //{
+        //    public void Configure(IConfiguration configuration, IClientBuilder clientBuilder)
+        //    {
+        //        clientBuilder.AddMemoryStreams<DefaultMemoryMessageBodySerializer>("MSProvider");
+        //    }
+        //}
 
         public void Dispose()
         {
             Database.ExecuteAsync("FLUSHALL").Wait();
-            Client.Dispose();
+            //Client.Dispose();
             Cluster.StopAllSilos();
             _redis?.Dispose();
         }

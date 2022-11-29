@@ -18,28 +18,22 @@ namespace Orleans.Persistence.Redis.Tests
         [InlineData("123")]
         public void StorageOptionsValidator(string connectionString)
         {
-            var siloPort = 11111;
+            var siloPort    = 11111;
             int gatewayPort = 30000;
             var siloAddress = IPAddress.Loopback;
-            
-            var builder = new SiloHostBuilder();
-            Assert.Throws<OrleansConfigurationException>(() => 
-            {
-                var silo = builder
-                    .Configure<ClusterOptions>(options => options.ClusterId = "TESTCLUSTER")
-                    .UseDevelopmentClustering(options => options.PrimarySiloEndpoint = new IPEndPoint(siloAddress, siloPort))
-                    .ConfigureEndpoints(siloAddress, siloPort, gatewayPort)
-                    .ConfigureApplicationParts(pm =>
-                    {
-                        pm.AddApplicationPart(typeof(JsonTestGrain).Assembly);
-                        pm.AddApplicationPart(typeof(IJsonTestGrain).Assembly);
-                    })
-                    .AddRedisGrainStorage("Redis", optionsBuilder => optionsBuilder.Configure(options =>
-                    {
-                        options.ConnectionString = connectionString;
-                    }))
-                    .Build();
-            });
+
+            var host = Host.CreateDefaultBuilder()
+                .UseOrleans((ctx, builder) => {
+                    builder.Configure<ClusterOptions>(options => options.ClusterId = "TESTCLUSTER")
+                        .UseDevelopmentClustering(options => options.PrimarySiloEndpoint = new IPEndPoint(siloAddress, siloPort))
+                        .ConfigureEndpoints(siloAddress, siloPort, gatewayPort)
+                        .AddRedisGrainStorage("Redis", optionsBuilder => optionsBuilder.Configure(options =>
+                        {
+                            options.ConnectionString = connectionString;
+                        }));
+                }).Build();
+
+            Assert.Throws<OrleansConfigurationException>(() => host.Start());
         }
     }
 }

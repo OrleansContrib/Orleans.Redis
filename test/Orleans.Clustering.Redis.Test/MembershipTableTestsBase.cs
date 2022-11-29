@@ -44,8 +44,8 @@ namespace Orleans.Clustering.Redis.Test
             this.clusterId = "testC-" + Guid.NewGuid();
             this.serviceId = "testS-" + Guid.NewGuid();
 
-            this.logger.Info("ClusterId={0}", this.clusterId);
-            this.logger.Info("ServiceId={0}", this.serviceId);
+            this.logger.LogInformation("ClusterId={ClusterId}", this.clusterId);
+            this.logger.LogInformation("ServiceId={ServiceId}", this.serviceId);
 
             this.clusterOptions = Options.Create(new ClusterOptions { ClusterId = this.clusterId, ServiceId = this.serviceId });
 
@@ -122,7 +122,7 @@ namespace Orleans.Clustering.Redis.Test
             var data = await this.membershipTable.ReadAll();
             Assert.NotNull(data);
 
-            this.logger?.Info("Membership.ReadAll returned TableVersion={0} Data={1}", data.Version, data);
+            this.logger?.LogInformation("Membership.ReadAll returned TableVersion={TableVersion} Data={Data}", data.Version, data);
 
             Assert.Equal(0, data.Members.Count);
             Assert.NotNull(data.Version.VersionEtag);
@@ -156,7 +156,7 @@ namespace Orleans.Clustering.Redis.Test
         {
             MembershipTableData data = await this.membershipTable.ReadAll();
 
-            this.logger?.Info("Membership.ReadAll returned TableVersion={0} Data={1}", data.Version, data);
+            this.logger?.LogInformation("Membership.ReadAll returned TableVersion={TableVersion} Data={Data}", data.Version, data);
 
             Assert.Equal(0, data.Members.Count);
 
@@ -198,7 +198,7 @@ namespace Orleans.Clustering.Redis.Test
                 Assert.Equal(newTableVersion.Version, data.Version.Version);
             }
 
-            this.logger?.Info("Membership.ReadRow returned TableVersion={0} Data={1}", data.Version, data);
+            this.logger?.LogInformation("Membership.ReadRow returned TableVersion={TableVersion} Data={Data}", data.Version, data);
 
             Assert.Equal(1, data.Members.Count);
             Assert.NotNull(data.Version.VersionEtag);
@@ -209,7 +209,7 @@ namespace Orleans.Clustering.Redis.Test
             }
             var membershipEntry = data.Members[0].Item1;
             string eTag = data.Members[0].Item2;
-            this.logger?.Info("Membership.ReadRow returned MembershipEntry ETag={0} Entry={1}", eTag, membershipEntry);
+            this.logger?.LogInformation("Membership.ReadRow returned MembershipEntry ETag={0} Entry={1}", eTag, membershipEntry);
 
             Assert.NotNull(eTag);
             Assert.NotNull(membershipEntry);
@@ -218,7 +218,7 @@ namespace Orleans.Clustering.Redis.Test
         protected async Task MembershipTable_ReadAll_Insert_ReadAll(bool extendedProtocol = true)
         {
             MembershipTableData data = await this.membershipTable.ReadAll();
-            this.logger?.Info("Membership.ReadAll returned TableVersion={0} Data={1}", data.Version, data);
+            this.logger?.LogInformation("Membership.ReadAll returned TableVersion={TableVersion} Data={Data}", data.Version, data);
 
             Assert.Equal(0, data.Members.Count);
 
@@ -230,7 +230,7 @@ namespace Orleans.Clustering.Redis.Test
             Assert.True(ok, "InsertRow failed");
 
             data = await this.membershipTable.ReadAll();
-            this.logger?.Info("Membership.ReadAll returned TableVersion={0} Data={1}", data.Version, data);
+            this.logger?.LogInformation("Membership.ReadAll returned TableVersion={TableVersion} Data={Data}", data.Version, data);
 
             Assert.Equal(1, data.Members.Count);
             Assert.NotNull(data.Version.VersionEtag);
@@ -243,7 +243,7 @@ namespace Orleans.Clustering.Redis.Test
 
             var membershipEntry = data.Members[0].Item1;
             string eTag = data.Members[0].Item2;
-            this.logger?.Info("Membership.ReadAll returned MembershipEntry ETag={0} Entry={1}", eTag, membershipEntry);
+            this.logger?.LogInformation("Membership.ReadAll returned MembershipEntry ETag={ETag} Entry={Entry}", eTag, membershipEntry);
 
             Assert.NotNull(eTag);
             Assert.NotNull(membershipEntry);
@@ -270,21 +270,24 @@ namespace Orleans.Clustering.Redis.Test
 
                 TableVersion tableVersion = tableData.Version.Next();
 
-                this.logger?.Info("Calling InsertRow with Entry = {0} TableVersion = {1}", siloEntry, tableVersion);
+                this.logger?.LogInformation("Calling InsertRow with Entry = {Entry} TableVersion = {TableVersion}", siloEntry, tableVersion);
                 bool ok = await this.membershipTable.InsertRow(siloEntry, tableVersion);
 
                 Assert.True(ok, "InsertRow failed");
 
                 tableData = await this.membershipTable.ReadAll();
 
-                var etagBefore = tableData.Get(siloEntry.SiloAddress).Item2;
+                var etagBefore = tableData.TryGet(siloEntry.SiloAddress).Item2;
 
                 Assert.NotNull(etagBefore);
 
                 if (extendedProtocol)
                 {
-                    this.logger?.Info("Calling UpdateRow with Entry = {0} correct eTag = {1} old version={2}", siloEntry,
-                                etagBefore, tableVersion != null ? tableVersion.ToString() : "null");
+                    this.logger?.LogInformation(
+                        "Calling UpdateRow with Entry = {Entry} correct eTag = {ETag} old version={OldVersion}",
+                        siloEntry,
+                        etagBefore,
+                        tableVersion != null ? tableVersion.ToString() : "null");
                     ok = await this.membershipTable.UpdateRow(siloEntry, etagBefore, tableVersion);
                     Assert.False(ok, $"row update should have failed - Table Data = {tableData}");
                     tableData = await this.membershipTable.ReadAll();
@@ -292,28 +295,37 @@ namespace Orleans.Clustering.Redis.Test
 
                 tableVersion = tableData.Version.Next();
 
-                this.logger?.Info("Calling UpdateRow with Entry = {0} correct eTag = {1} correct version={2}", siloEntry,
-                    etagBefore, tableVersion != null ? tableVersion.ToString() : "null");
+                this.logger?.LogInformation(
+                    "Calling UpdateRow with Entry = {Entry} correct eTag = {ETag} correct version={Version}",
+                    siloEntry,
+                    etagBefore,
+                    tableVersion != null ? tableVersion.ToString() : "null");
 
                 ok = await this.membershipTable.UpdateRow(siloEntry, etagBefore, tableVersion);
 
                 Assert.True(ok, $"UpdateRow failed - Table Data = {tableData}");
 
-                this.logger?.Info("Calling UpdateRow with Entry = {0} old eTag = {1} old version={2}", siloEntry,
-                    etagBefore, tableVersion != null ? tableVersion.ToString() : "null");
+                this.logger?.LogInformation(
+                    "Calling UpdateRow with Entry = {Entry} old eTag = {OldETag} old version={OldVersion}",
+                    siloEntry,
+                    etagBefore,
+                    tableVersion != null ? tableVersion.ToString() : "null");
                 ok = await this.membershipTable.UpdateRow(siloEntry, etagBefore, tableVersion);
                 Assert.False(ok, $"row update should have failed - Table Data = {tableData}");
 
                 tableData = await this.membershipTable.ReadAll();
 
-                var tuple = tableData.Get(siloEntry.SiloAddress);
+                var tuple = tableData.TryGet(siloEntry.SiloAddress);
 
                 var etagAfter = tuple.Item2;
 
                 if (extendedProtocol)
                 {
-                    this.logger?.Info("Calling UpdateRow with Entry = {0} correct eTag = {1} old version={2}", siloEntry,
-                                etagAfter, tableVersion != null ? tableVersion.ToString() : "null");
+                    this.logger?.LogInformation(
+                        "Calling UpdateRow with Entry = {Entry} correct eTag = {ETag} old version={OldVersion}",
+                        siloEntry,
+                        etagAfter,
+                        tableVersion != null ? tableVersion.ToString() : "null");
 
                     ok = await this.membershipTable.UpdateRow(siloEntry, etagAfter, tableVersion);
 
@@ -324,7 +336,7 @@ namespace Orleans.Clustering.Redis.Test
 
                 etagBefore = etagAfter;
 
-                etagAfter = tableData.Get(siloEntry.SiloAddress).Item2;
+                etagAfter = tableData.TryGet(siloEntry.SiloAddress).Item2;
 
                 Assert.Equal(etagBefore, etagAfter);
                 Assert.NotNull(tableData.Version);
@@ -355,7 +367,7 @@ namespace Orleans.Clustering.Redis.Test
                 do
                 {
                     var updatedTableData = await this.membershipTable.ReadAll();
-                    var updatedRow = updatedTableData.Get(data.SiloAddress);
+                    var updatedRow = updatedTableData.TryGet(data.SiloAddress);
 
                     TableVersion tableVersion = updatedTableData.Version.Next();
 

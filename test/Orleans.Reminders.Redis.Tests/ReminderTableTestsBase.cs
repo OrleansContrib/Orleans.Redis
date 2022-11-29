@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 using Newtonsoft.Json;
-
+using Orleans.Clustering.Redis.Test;
 using Orleans.Configuration;
 using Orleans.Internal;
 using Orleans.Reminders.Redis.TestGrainInterfaces;
@@ -38,7 +38,7 @@ namespace Orleans.Reminders.Redis.Tests
             string serviceId = Guid.NewGuid().ToString();
             string clusterId = "test-" + serviceId;
 
-            logger.Info("ClusterId={0}", clusterId);
+            logger.LogInformation("ClusterId={ClusterId}", clusterId);
             clusterOptions = Options.Create(new ClusterOptions { ClusterId = clusterId, ServiceId = serviceId });
 
             IReminderTable rmndr = CreateRemindersTable();
@@ -73,12 +73,12 @@ namespace Orleans.Reminders.Redis.Tests
             await ReminderSimple(MakeTestGrainReference(), "0");
         }
 
-        protected async Task ReminderSimple(GrainReference grainRef, string reminderName)
+        protected async Task ReminderSimple(GrainId grainId, string reminderName)
         {
-            ReminderEntry reminder = CreateReminder(grainRef, reminderName);
+            ReminderEntry reminder = CreateReminder(grainId, reminderName);
             await remindersTable.UpsertRow(reminder);
 
-            ReminderEntry readReminder = await remindersTable.ReadRow(reminder.GrainRef, reminder.ReminderName);
+            ReminderEntry readReminder = await remindersTable.ReadRow(reminder.GrainId, reminder.ReminderName);
 
             string etagTemp = reminder.ETag = readReminder.ETag;
 
@@ -88,13 +88,13 @@ namespace Orleans.Reminders.Redis.Tests
 
             reminder.ETag = await remindersTable.UpsertRow(reminder);
 
-            bool removeRowRes = await remindersTable.RemoveRow(reminder.GrainRef, reminder.ReminderName, etagTemp);
+            bool removeRowRes = await remindersTable.RemoveRow(reminder.GrainId, reminder.ReminderName, etagTemp);
             Assert.False(removeRowRes, "should have failed. Etag is wrong");
-            removeRowRes = await remindersTable.RemoveRow(reminder.GrainRef, "bla", reminder.ETag);
+            removeRowRes = await remindersTable.RemoveRow(reminder.GrainId, "bla", reminder.ETag);
             Assert.False(removeRowRes, "should have failed. reminder name is wrong");
-            removeRowRes = await remindersTable.RemoveRow(reminder.GrainRef, reminder.ReminderName, reminder.ETag);
+            removeRowRes = await remindersTable.RemoveRow(reminder.GrainId, reminder.ReminderName, reminder.ETag);
             Assert.True(removeRowRes, "should have succeeded. Etag is right");
-            removeRowRes = await remindersTable.RemoveRow(reminder.GrainRef, reminder.ReminderName, reminder.ETag);
+            removeRowRes = await remindersTable.RemoveRow(reminder.GrainId, reminder.ReminderName, reminder.ETag);
             Assert.False(removeRowRes, "should have failed. reminder shouldn't exist");
         }
 
@@ -102,11 +102,11 @@ namespace Orleans.Reminders.Redis.Tests
         {
             await Task.WhenAll(Enumerable.Range(1, iterations).Select(async i =>
             {
-                GrainReference grainRef = MakeTestGrainReference();
+                GrainId grainId = MakeTestGrainReference();
 
                 await RetryHelper.RetryOnExceptionAsync<Task>(10, RetryOperation.Sigmoid, async () =>
                 {
-                    await remindersTable.UpsertRow(CreateReminder(grainRef, i.ToString()));
+                    await remindersTable.UpsertRow(CreateReminder(grainId, i.ToString()));
                     return Task.CompletedTask;
                 });
             }));
@@ -119,9 +119,9 @@ namespace Orleans.Reminders.Redis.Tests
 
             Assert.Equal(rows.Reminders.Count, iterations);
 
-            uint[] remindersHashes = rows.Reminders.Select(r => r.GrainRef.GetUniformHashCode()).ToArray();
+            uint[] remindersHashes = rows.Reminders.Select(r => r.GrainId.GetUniformHashCode()).ToArray();
 
-            SafeRandom random = new SafeRandom();
+            Random random = new Random();
 
             await Task.WhenAll(Enumerable.Range(0, iterations).Select(i =>
                 TestRemindersHashInterval(remindersTable, (uint)random.Next(), (uint)random.Next(),
@@ -137,33 +137,32 @@ namespace Orleans.Reminders.Redis.Tests
                 : remindersHashes.Where(r => r > beginHash || r <= endHash);
 
             HashSet<uint> expectedSet = new HashSet<uint>(expectedHashes);
-            IEnumerable<uint> returnedHashes = (await rowsTask).Reminders.Select(r => r.GrainRef.GetUniformHashCode());
+            IEnumerable<uint> returnedHashes = (await rowsTask).Reminders.Select(r => r.GrainId.GetUniformHashCode());
             HashSet<uint> returnedSet = new HashSet<uint>(returnedHashes);
 
             Assert.True(returnedSet.SetEquals(expectedSet));
         }
 
-        protected static ReminderEntry CreateReminder(GrainReference grainRef, string reminderName)
+        protected static ReminderEntry CreateReminder(GrainId grainId, string reminderName)
         {
             DateTime now = DateTime.UtcNow;
             now = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second);
             return new ReminderEntry
             {
-                GrainRef = grainRef,
+                GrainId = grainId,
                 Period = TimeSpan.FromMinutes(1),
                 StartAt = now,
                 ReminderName = reminderName
             };
         }
 
-        protected GrainReference MakeTestGrainReference()
+        protected GrainId MakeTestGrainReference()
         {
             return MakeTestGrainReference(Guid.NewGuid().ToString());
         }
-        protected GrainReference MakeTestGrainReference(string grainId)
+        protected GrainId MakeTestGrainReference(string grainId)
         {
-            GrainReference grainRef = clusterFixture.Client.GetGrain<IReminderTestGrain>(grainId).GetReference().Result;
-            return grainRef;
+            return clusterFixture.Client.GetGrain<IReminderTestGrain>(grainId).GetGrainId();
         }
     }
 }

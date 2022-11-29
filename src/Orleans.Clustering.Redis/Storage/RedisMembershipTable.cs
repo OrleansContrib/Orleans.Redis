@@ -9,8 +9,6 @@ using Microsoft.Extensions.Options;
 using System.Runtime.CompilerServices;
 using System.Globalization;
 
-[assembly: InternalsVisibleTo("Orleans.Clustering.Redis.Test")]
-
 namespace Orleans.Clustering.Redis
 {
     internal class RedisMembershipTable : IMembershipTable, IDisposable

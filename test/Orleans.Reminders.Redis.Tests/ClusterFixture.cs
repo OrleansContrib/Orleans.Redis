@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 
 using Microsoft.Extensions.Configuration;
-
+using Microsoft.Extensions.Hosting;
 using Orleans.Hosting;
 using Orleans.TestingHost;
 
@@ -16,27 +16,18 @@ namespace Orleans.Reminders.Redis.Tests
 
         public ClusterFixture()
         {
-            TestClusterBuilder builder = new TestClusterBuilder(1);
-            builder.Options.ServiceId = "Service";
-            builder.Options.ClusterId = "TestCluster";
-            builder.AddSiloBuilderConfigurator<SiloConfigurator>();
-
             string redisHost = Environment.GetEnvironmentVariable("REDIS_HOST") ?? "127.0.0.1";
             string redisPort = Environment.GetEnvironmentVariable("REDIS_PORT") ?? "6379";
             string redisConnectionString = $"{redisHost}:{redisPort}, allowAdmin=true";
 
-            builder.ConfigureHostConfiguration(config =>
-            {
-                config.AddInMemoryCollection(new Dictionary<string, string>()
-                {
-                    { "RedisConnectionString", redisConnectionString }
-                });
-            });
-
+            TestClusterBuilder builder = new TestClusterBuilder(1);
+            builder.Options.ServiceId = "Service";
+            builder.Options.ClusterId = "TestCluster";
+            builder.AddSiloBuilderConfigurator<SiloConfigurator>();
             Cluster = builder.Build();
-
             Cluster.Deploy();
-            Cluster.InitializeClient();
+
+            Cluster.InitializeClientAsync();
             Client = Cluster.Client;
 
             ConfigurationOptions redisOptions = ConfigurationOptions.Parse(redisConnectionString);
@@ -53,12 +44,13 @@ namespace Orleans.Reminders.Redis.Tests
         {
             public void Configure(ISiloBuilder builder)
             {
-                //get the redis connection string from the testcluster's config
-                string redisEP = builder.GetConfigurationValue("RedisConnectionString");
-
                 builder.UseRedisReminderService(options =>
                 {
-                    options.ConnectionString = redisEP;
+                    string redisHost = Environment.GetEnvironmentVariable("REDIS_HOST") ?? "127.0.0.1";
+                    string redisPort = Environment.GetEnvironmentVariable("REDIS_PORT") ?? "6379";
+                    string redisConnectionString = $"{redisHost}:{redisPort}, allowAdmin=true";
+
+                    options.ConnectionString = redisConnectionString;
                 });
             }
         }
@@ -66,7 +58,7 @@ namespace Orleans.Reminders.Redis.Tests
         public void Dispose()
         {
             Database.ExecuteAsync("FLUSHALL").Wait();
-            Client.Dispose();
+            //Client.Dispose();
             Cluster.StopAllSilos();
             _redis?.Dispose();
         }

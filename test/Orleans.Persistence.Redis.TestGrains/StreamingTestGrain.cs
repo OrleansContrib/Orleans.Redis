@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Orleans.Persistence.Redis.TestGrainInterfaces;
 using Orleans.Streams;
@@ -10,11 +11,11 @@ namespace Orleans.Persistence.Redis.TestGrains
     {
         private StreamItem _lastItem;
         
-        public override async Task OnActivateAsync()
+        public override async Task OnActivateAsync(CancellationToken cancellationToken)
         {
-            var streamProvider = GetStreamProvider("SMSProvider");
+            var streamProvider = this.GetStreamProvider("MSProvider");
 
-            var streamItemStream = streamProvider.GetStream<StreamItem>(this.GetPrimaryKey(), "StreamItems");
+            var streamItemStream = streamProvider.GetStream<StreamItem>("StreamItems", this.GetPrimaryKey());
 
             var handles = await streamItemStream.GetAllSubscriptionHandles();
             if (handles.Any())

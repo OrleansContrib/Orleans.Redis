@@ -4,8 +4,8 @@ namespace Orleans.Persistence
 {
     internal class RedisStorageOptionsValidator : IConfigurationValidator
     {
-        private RedisStorageOptions _options;
-        private string _name;
+        private readonly RedisStorageOptions _options;
+        private readonly string _name;
 
         public RedisStorageOptionsValidator(RedisStorageOptions options, string name)
         {
@@ -16,6 +16,7 @@ namespace Orleans.Persistence
         public void ValidateConfiguration()
         {
             var msg = $"Configuration for {nameof(RedisGrainStorage)} - {_name} is invalid";
+
             if (_options == null)
             {
                 throw new OrleansConfigurationException($"{msg} - {nameof(RedisStorageOptions)} is null");
@@ -26,8 +27,7 @@ namespace Orleans.Persistence
                 throw new OrleansConfigurationException($"{msg} - {nameof(_options.ConnectionString)} is null or empty");
             }
 
-            // host:port delimiter
-            if (!_options.ConnectionString.Contains(":"))
+            if (!_options.ConnectionString.Contains(':')) // host:port delimiter
             {
                 throw new OrleansConfigurationException($"{msg} - {nameof(_options.ConnectionString)} invalid format: {_options.ConnectionString}, should contain host and port delimited by ':'");
             }
