@@ -135,7 +135,7 @@ namespace Orleans.Persistence
         /// <inheritdoc />
         public async Task ReadStateAsync<T>(string grainType, GrainId grainId, IGrainState<T> grainState)
         {
-            var key = GetKey(grainId);
+            var key = grainId.ToString();
 
             try
             {
@@ -169,7 +169,7 @@ namespace Orleans.Persistence
         public async Task WriteStateAsync<T>(string grainType, GrainId grainId, IGrainState<T> grainState)
         {
             var etag = grainState.ETag ?? "null";
-            var key = GetKey(grainId);
+            var key = grainId.ToString();
             var newEtag = Guid.NewGuid().ToString();
 
             RedisValue payload = default;
@@ -235,14 +235,8 @@ namespace Orleans.Persistence
         /// <inheritdoc />
         public async Task ClearStateAsync<T>(string grainType, GrainId grainId, IGrainState<T> grainState)
         {
-            var key = GetKey(grainId);
+            var key = grainId.ToString();
             await _db.KeyDeleteAsync(key).ConfigureAwait(false);
-        }
-
-        private string GetKey(GrainId grainId)
-        {
-            //return $"{grainId.ToString()}|{_grainStorageSerializer.GetType().ToString()}";
-            return grainId.ToString();
         }
 
         private async Task Close(CancellationToken cancellationToken)
