@@ -31,7 +31,7 @@ Configure your Orleans silos
 var silo = new SiloHostBuilder()
     .AddRedisGrainStorage("Redis", optionsBuilder => optionsBuilder.Configure(options =>
     {
-        options.DataConnectionString = "localhost:6379"; // This is the deafult
+        options.DataConnectionString = "localhost:6379"; // This is the default
         options.DatabaseNumber = 1;
     }))
     .Build();
