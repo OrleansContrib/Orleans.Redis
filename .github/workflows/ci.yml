@@ -27,7 +27,7 @@ jobs:
       - name: Build
         run: dotnet build --configuration Release -p:ContinuousIntegrationBuild=true
       - name: Test
-        run: dotnet test --no-build --configuration Release --no-build --framework net7.0
+        run: dotnet test --no-build --configuration Release --no-build --framework net8.0
         env:
           REDIS_HOST: localhost
           REDIS_PORT: ${{ job.services.redis.ports[6379] }}
