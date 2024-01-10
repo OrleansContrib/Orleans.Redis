@@ -34,6 +34,7 @@ namespace Orleans.Persistence.Redis
         }
 
         /// <inheritdoc />
+        [Obsolete]
         protected RedisStorageException(
             SerializationInfo info,
             StreamingContext context) : base(info, context)
