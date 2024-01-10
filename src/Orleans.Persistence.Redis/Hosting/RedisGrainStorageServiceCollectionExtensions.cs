@@ -1,12 +1,11 @@
-using System;
+﻿using System;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Orleans.Configuration;
 using Orleans.Hosting;
 using Orleans.Persistence;
 using Orleans.Providers;
-using Orleans.Runtime;
+using Orleans.Runtime.Hosting;
 using Orleans.Storage;
 
 namespace Orleans.Hosting
@@ -17,7 +16,7 @@ namespace Orleans.Hosting
     public static class RedisGrainStorageServiceCollectionExtensions
     {
         /// <summary>
-        /// Configure silo to use azure blob storage as the default grain storage.
+        /// Configure silo to use Redis as the default grain storage.
         /// </summary>
         public static IServiceCollection AddRedisGrainStorageAsDefault(this IServiceCollection services, Action<RedisStorageOptions> configureOptions)
         {
@@ -25,7 +24,7 @@ namespace Orleans.Hosting
         }
 
         /// <summary>
-        /// Configure silo to use azure blob storage for grain storage.
+        /// Configure silo to use Redis for grain storage.
         /// </summary>
         public static IServiceCollection AddRedisGrainStorage(this IServiceCollection services, string name, Action<RedisStorageOptions> configureOptions)
         {
@@ -33,7 +32,7 @@ namespace Orleans.Hosting
         }
 
         /// <summary>
-        /// Configure silo to use azure blob storage as the default grain storage.
+        /// Configure silo to use Redis as the default grain storage.
         /// </summary>
         public static IServiceCollection AddRedisGrainStorageAsDefault(this IServiceCollection services, Action<OptionsBuilder<RedisStorageOptions>> configureOptions = null)
         {
@@ -41,7 +40,7 @@ namespace Orleans.Hosting
         }
 
         /// <summary>
-        /// Configure silo to use azure blob storage for grain storage.
+        /// Configure silo to use Redis for grain storage.
         /// </summary>
         public static IServiceCollection AddRedisGrainStorage(this IServiceCollection services, string name,
             Action<OptionsBuilder<RedisStorageOptions>> configureOptions = null)
@@ -50,12 +49,7 @@ namespace Orleans.Hosting
             services.AddTransient<IConfigurationValidator>(sp => new RedisStorageOptionsValidator(sp.GetRequiredService<IOptionsMonitor<RedisStorageOptions>>().Get(name), name));
             services.AddTransient<IPostConfigureOptions<RedisStorageOptions>, DefaultStorageProviderSerializerOptionsConfigurator<RedisStorageOptions>>();
             services.ConfigureNamedOptionForLogging<RedisStorageOptions>(name);
-            if (string.Equals(name, ProviderConstants.DEFAULT_STORAGE_PROVIDER_NAME, StringComparison.Ordinal))
-            {
-                services.TryAddSingleton(sp => sp.GetServiceByName<IGrainStorage>(ProviderConstants.DEFAULT_STORAGE_PROVIDER_NAME));
-            }
-            services.AddSingletonNamedService<IGrainStorage>(name, RedisGrainStorageFactory.Create)
-                .AddSingletonNamedService<ILifecycleParticipant<ISiloLifecycle>>(name, (s, n) => (ILifecycleParticipant<ISiloLifecycle>)s.GetRequiredServiceByName<IGrainStorage>(n));
+            services.AddGrainStorage(name, RedisGrainStorageFactory.Create);
             return services;
         }
     }
